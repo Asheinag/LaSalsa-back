@@ -16,7 +16,7 @@ from app.dependencies import verify_firebase_token
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/", status_code=201, response_model=TaskRead)
+@router.post("", status_code=201, response_model=TaskRead)
 async def create_task_endpoint(
     task: TaskCreate, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
 ):
@@ -30,7 +30,7 @@ async def create_task_endpoint(
     return await create_task(db, task, user_uid)
 
 
-@router.get("/", response_model=list[TaskShort])
+@router.get("", response_model=list[TaskShort])
 async def get_tasks_endpoint(
     offset: int = 0, limit: int = 100, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
 ):
@@ -61,7 +61,7 @@ async def get_task_by_id_endpoint(
     return task
 
 
-@router.delete("/")
+@router.delete("")
 async def delete_task_endpoint(
     task_id: TaskID, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
 ):

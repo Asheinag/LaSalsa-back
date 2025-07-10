@@ -12,8 +12,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Копируем json для firebase
+COPY serviceAccountKey.json .
+
 # Копируем код приложения в контейнер
 COPY ./app ./app
+COPY alembic.ini ./
+COPY alembic ./alembic
 
-# Команда для запуска приложения
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

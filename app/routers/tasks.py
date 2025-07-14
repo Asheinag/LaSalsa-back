@@ -8,8 +8,10 @@ from app.crud import (
     update_task,
     update_task_status,
     get_task_by_id,
+    get_task_chain,
+
 )
-from app.schemas import TaskCreate, TaskRead, TaskShort, TaskStatus, TaskID
+from app.schemas import TaskCreate, TaskRead, TaskShort, TaskStatusUpdate, TaskID
 from app.dependencies import verify_firebase_token
 
 
@@ -94,7 +96,7 @@ async def update_task_endpoint(
 
 @router.patch("/status", response_model=TaskRead)
 async def update_task_status_endpoint(
-    task_status: TaskStatus, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
+    task_status: TaskStatusUpdate, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
 ):
     """
     Update the status of a task by ID.
@@ -107,3 +109,19 @@ async def update_task_status_endpoint(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.get("/chain/{task_id}", response_model=list[TaskRead])
+async def get_chain_tasks_endpoint(
+    task_id: int, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)
+):
+    """
+    Get all tasks in the chain of a given task.
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_uid = user.get("uid")
+    tasks = await get_task_chain(db, task_id, user_uid)
+    return tasks
+    

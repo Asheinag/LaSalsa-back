@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,14 +38,18 @@ async def get_project_by_id(db: AsyncSession, project_id: int, user_uid: str) ->
 
 
 async def get_project_by_name(db: AsyncSession, project_name: str, user_uid: str) -> Project | None:
-    project = await db.execute(select(Project).where(Project.name == project_name))
+    result = await db.execute(select(Project).where(Project.name == project_name))
+    project = result.scalars().first()
+
     if not project:
         return None
+    
     if not validate_owner(user_uid, project):
         return None
-    return project.scalars().first()
+    
+    return project
 
 
-async def get_projects(db: AsyncSession, user_uid: str) -> list[Project]:
+async def get_projects(db: AsyncSession, user_uid: str) -> Sequence[Project]:
     result = await db.execute(select(Project).filter(Project.owner_uid == user_uid))
     return result.scalars().all()

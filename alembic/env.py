@@ -4,7 +4,12 @@ from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import pool
 from alembic import context
+from dotenv import load_dotenv
+from app.database import Base
+from app.models import *  # noqa: F403
 
+env_file = os.environ.get("ENV_FILE", ".env.dev")  # например, передаётся через окружение
+load_dotenv(dotenv_path=env_file)
 
 config = context.config
 # Load environment variables from the config
@@ -21,12 +26,12 @@ config.set_section_option(section, "DB_PASS", os.getenv("DB_PASS"))
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.database import Base
-from app.models import *
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

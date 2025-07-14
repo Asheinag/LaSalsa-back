@@ -1,16 +1,5 @@
-version: '0.1.0'
+version: '0.2.0'
 services:
-  postgres:
-    image: postgres:16.9
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    
   test-db:
     image: postgres:16.9
     environment:
@@ -19,7 +8,7 @@ services:
       POSTGRES_DB: test_db
     ports:
       - "5433:5432"
-    
+
   dev-db:
     image: postgres:16.9
     environment:
@@ -27,20 +16,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: dev_db
     ports:
-      - "5437:5432"
-
-
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: LaSalsaBackend
-    env_file: .env.qa
-    depends_on:
-      - postgres
-    ports:
-      - "8008:8000"
+      - "5436:5432"
 
 volumes:
   pgdata:
-

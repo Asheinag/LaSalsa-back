@@ -1,12 +1,24 @@
 import pytest
+import redis
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
 
+os.environ["CELERY_BROKER_URL"] = "redis://localhost:6380/0"
+os.environ["CELERY_RESULT_BACKEND"] = "redis://localhost:6380/0"
+os.environ["ENV"] = "test"
+from app.celery_app import celery_app
+
 print("== ROUTES ==")
 for route in app.routes:
-    print(route.path)
+    print(route.path) # type: ignore
+
+
+
 
 @pytest.fixture(scope="function")
 async def client():
@@ -41,3 +53,36 @@ async def client():
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
+
+# Создание окружения для Celery
+SYNC_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5433/test_db"
+
+sync_engine = create_engine(SYNC_DATABASE_URL)
+SyncSessionLocal = sessionmaker(bind=sync_engine)
+
+@pytest.fixture(scope="function")
+def db_session():
+    Base.metadata.drop_all(bind=sync_engine)
+    Base.metadata.create_all(bind=sync_engine)
+    session = SyncSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=sync_engine)
+
+@pytest.fixture(autouse=True)
+def celery_eager():
+    celery_app.conf.task_always_eager = True
+    celery_app.conf.task_store_eager_result = True 
+    yield
+    celery_app.conf.task_always_eager = False
+    celery_app.conf.task_store_eager_result = False
+
+
+# @pytest.fixture(autouse=True, scope="function")
+# def clear_test_redis():
+#     r = redis.Redis(host="localhost", port=6380, db=0)
+#     r.flushall()
+#     yield
+#     r.flushall()

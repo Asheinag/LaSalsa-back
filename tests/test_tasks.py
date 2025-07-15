@@ -1,11 +1,19 @@
+import asyncio
 import pytest
 from httpx import AsyncClient
 
+from app.celery_app import celery_app
 
-def create_task_function(client: AsyncClient):
+def create_task_function(client: AsyncClient, task_data=None):
+    if task_data is None:
+        task_data = {
+            "name": "Test Task",
+            "description": "Created via test",
+            "status": "TODO"
+        }
     return client.post(
         "/tasks",
-        json={"name": "Test Task", "description": "Created via test", "status": "TODO"},
+        json=task_data,
     )
 
 
@@ -39,7 +47,7 @@ async def test_get_tasks(client: AsyncClient):
     await create_task_function(client)
 
     # Now get the tasks
-    response = await client.get("/tasks")
+    response = await client.get("/tasks/?offset=0&limit=100")
 
     # Check the response
     assert response.status_code == 200
@@ -56,7 +64,7 @@ async def test_delete_task(client: AsyncClient):
 
     # Delete the task
     delete_response = await client.request(
-        method="DELETE", url="/tasks", json={"id": task_id}
+        method="DELETE", url=f"/tasks/{task_id}/"
     )
     assert delete_response.status_code == 200
     data = delete_response.json()
@@ -141,3 +149,64 @@ async def test_update_task_status_in_progress(client: AsyncClient):
     assert data["id"] == task_id
     assert data["status"] == "IN_PROGRESS"
     assert data["closed_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_task_childs(client: AsyncClient):
+    tasks_data = [
+        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
+        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
+        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
+    ]
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+    
+    # Get the task chain for the parent task
+    response = await client.get("/tasks/1/childs/")
+    assert response.status_code == 200
+    response_data = response.json()
+    assert len(response_data) == 2
+    assert response_data[0]["name"] == "Child Task 1"
+    assert response_data[1]["name"] == "Child Task 2"
+
+@pytest.mark.asyncio
+async def test_create_task_chain(client: AsyncClient):
+    tasks_data = [
+        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
+        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
+        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
+        {"name": "Grandchild Task", "description": "Grandchild task description", "status": "TODO", "parent_id": 2},
+    ]
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+
+    response = await client.post("/tasks/build_chain/1")
+    assert response.status_code == 200
+    response_data = response.json()
+    print(response_data)
+    assert response_data.get("status") == 'Task chain building started'
+    assert "celery_task_id" in response_data
+
+    celery_task_id = response_data["celery_task_id"]
+
+    status_response = await client.get(f"/tasks/build_chain/status/{celery_task_id}")
+    status_data = {}
+    max_attempts = 10
+    for attempt in range(max_attempts):
+        status_response = await client.get(f"/tasks/build_chain/status/{celery_task_id}")
+        assert status_response.status_code == 200
+        status_data = status_response.json()
+
+
+        if status_data.get("status") in ("SUCCESS", "FAILURE"):
+            break
+        await asyncio.sleep(1.0)  # ⏱ Пауза между проверками
+
+    print(">>> celery backend:", celery_app.conf.result_backend)
+    from celery.result import AsyncResult
+    result = AsyncResult(celery_task_id, app=celery_app)
+    print(">>> Direct check result.state:", result.state)
+    print(">>> Direct check result.result:", result.result)
+    print("celery_app backend =", celery_app.conf.result_backend)
+    assert status_data["status"] == "SUCCESS"
+    assert "result" in status_data

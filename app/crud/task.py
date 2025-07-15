@@ -141,7 +141,7 @@ async def get_tasks_by_project_id(
     return result.scalars().all()
 
 
-async def get_task_chain(
+async def get_task_childs(
     db: AsyncSession, task_id: int, user_uid: str
 ) -> Sequence[Task]:
     task = await get_task_by_id(db, task_id, user_uid)

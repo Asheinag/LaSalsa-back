@@ -17,7 +17,8 @@ class TaskBase(BaseModel):
 
 # This is a Pydantic model for the Task schema used for creating new tasks - same as TaskBase
 class TaskCreate(TaskBase):
-    pass
+    class Config:
+        use_enum_values = True
 
 class TaskShort(BaseModel):
     id: int = Field(..., title="Task ID", description="Unique identifier for the task")

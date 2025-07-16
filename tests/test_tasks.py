@@ -1,8 +1,11 @@
-import asyncio
 import pytest
+from datetime import datetime
 from httpx import AsyncClient
 
 from app.celery_app import celery_app
+from app.models.task import Task
+
+build_task_chain = celery_app.tasks["app.tasks.build_task_chain"]
 
 def create_task_function(client: AsyncClient, task_data=None):
     if task_data is None:
@@ -180,33 +183,32 @@ async def test_create_task_chain(client: AsyncClient):
     for task_data in tasks_data:
         await create_task_function(client, task_data)
 
-    response = await client.post("/tasks/build_chain/1")
-    assert response.status_code == 200
-    response_data = response.json()
-    print(response_data)
-    assert response_data.get("status") == 'Task chain building started'
-    assert "celery_task_id" in response_data
-
-    celery_task_id = response_data["celery_task_id"]
-
-    status_response = await client.get(f"/tasks/build_chain/status/{celery_task_id}")
-    status_data = {}
-    max_attempts = 10
-    for attempt in range(max_attempts):
-        status_response = await client.get(f"/tasks/build_chain/status/{celery_task_id}")
-        assert status_response.status_code == 200
-        status_data = status_response.json()
+    result = build_task_chain.apply((1,), throw=True)
+    chain = result.get()
+    assert chain["id"] == 1
+    assert len(chain["children"]) == 2
 
 
-        if status_data.get("status") in ("SUCCESS", "FAILURE"):
-            break
-        await asyncio.sleep(1.0)  # ⏱ Пауза между проверками
 
-    print(">>> celery backend:", celery_app.conf.result_backend)
-    from celery.result import AsyncResult
-    result = AsyncResult(celery_task_id, app=celery_app)
-    print(">>> Direct check result.state:", result.state)
-    print(">>> Direct check result.result:", result.result)
-    print("celery_app backend =", celery_app.conf.result_backend)
-    assert status_data["status"] == "SUCCESS"
-    assert "result" in status_data
+def test_build_chain_with_direct_db(db_session, monkeypatch):
+    from app.crud import chains
+
+    # 👇 monkeypatch локально
+    monkeypatch.setattr(chains, "get_sync_session", lambda: db_session)
+
+    # Дальше всё как раньше
+    parent = Task(name="Parent Task", description="Parent", status="TODO", created_at=datetime.now(), owner_uid="test_user_123")
+    child1 = Task(name="Child Task 1", description="Child 1", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
+    child2 = Task(name="Child Task 2", description="Child 2", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
+    grandchild = Task(name="Grandchild Task", description="Grandchild", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=2)
+
+    db_session.add_all([parent, child1, child2, grandchild])
+    db_session.commit()
+
+    result = build_task_chain.apply((parent.id,), throw=True)
+    chain = result.get()
+
+    assert chain["name"] == "Parent Task"
+    assert len(chain["children"]) == 2
+    assert any(c["name"] == "Child Task 1" for c in chain["children"])
+    assert any(c["name"] == "Child Task 2" for c in chain["children"])

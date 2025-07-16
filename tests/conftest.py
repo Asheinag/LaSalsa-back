@@ -1,16 +1,10 @@
 import pytest
-import redis
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from app.database import Base, get_async_session
+from app.database import Base, get_async_session, get_sync_session
 from app.dependencies import verify_firebase_token
 from app.main import app
-
-os.environ["CELERY_BROKER_URL"] = "redis://localhost:6380/0"
-os.environ["CELERY_RESULT_BACKEND"] = "redis://localhost:6380/0"
-os.environ["ENV"] = "test"
 from app.celery_app import celery_app
 
 print("== ROUTES ==")

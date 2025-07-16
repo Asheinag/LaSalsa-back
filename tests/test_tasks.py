@@ -1,11 +1,22 @@
 import pytest
+from datetime import datetime
 from httpx import AsyncClient
 
+from app.celery_app import celery_app
+from app.models.task import Task
 
-def create_task_function(client: AsyncClient):
+build_task_chain = celery_app.tasks["app.tasks.build_task_chain"]
+
+def create_task_function(client: AsyncClient, task_data=None):
+    if task_data is None:
+        task_data = {
+            "name": "Test Task",
+            "description": "Created via test",
+            "status": "TODO"
+        }
     return client.post(
-        "/tasks/",
-        json={"name": "Test Task", "description": "Created via test", "status": "TODO"},
+        "/tasks",
+        json=task_data,
     )
 
 
@@ -39,7 +50,7 @@ async def test_get_tasks(client: AsyncClient):
     await create_task_function(client)
 
     # Now get the tasks
-    response = await client.get("/tasks/")
+    response = await client.get("/tasks/?offset=0&limit=100")
 
     # Check the response
     assert response.status_code == 200
@@ -56,7 +67,7 @@ async def test_delete_task(client: AsyncClient):
 
     # Delete the task
     delete_response = await client.request(
-        method="DELETE", url="/tasks/", json={"id": task_id}
+        method="DELETE", url=f"/tasks/{task_id}/"
     )
     assert delete_response.status_code == 200
     data = delete_response.json()
@@ -141,3 +152,63 @@ async def test_update_task_status_in_progress(client: AsyncClient):
     assert data["id"] == task_id
     assert data["status"] == "IN_PROGRESS"
     assert data["closed_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_task_childs(client: AsyncClient):
+    tasks_data = [
+        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
+        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
+        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
+    ]
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+    
+    # Get the task chain for the parent task
+    response = await client.get("/tasks/1/childs/")
+    assert response.status_code == 200
+    response_data = response.json()
+    assert len(response_data) == 2
+    assert response_data[0]["name"] == "Child Task 1"
+    assert response_data[1]["name"] == "Child Task 2"
+
+@pytest.mark.asyncio
+async def test_create_task_chain(client: AsyncClient):
+    tasks_data = [
+        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
+        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
+        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
+        {"name": "Grandchild Task", "description": "Grandchild task description", "status": "TODO", "parent_id": 2},
+    ]
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+
+    result = build_task_chain.apply((1,), throw=True)
+    chain = result.get()
+    assert chain["id"] == 1
+    assert len(chain["children"]) == 2
+
+
+
+def test_build_chain_with_direct_db(db_session, monkeypatch):
+    from app.crud import chains
+
+    # 👇 monkeypatch локально
+    monkeypatch.setattr(chains, "get_sync_session", lambda: db_session)
+
+    # Дальше всё как раньше
+    parent = Task(name="Parent Task", description="Parent", status="TODO", created_at=datetime.now(), owner_uid="test_user_123")
+    child1 = Task(name="Child Task 1", description="Child 1", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
+    child2 = Task(name="Child Task 2", description="Child 2", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
+    grandchild = Task(name="Grandchild Task", description="Grandchild", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=2)
+
+    db_session.add_all([parent, child1, child2, grandchild])
+    db_session.commit()
+
+    result = build_task_chain.apply((parent.id,), throw=True)
+    chain = result.get()
+
+    assert chain["name"] == "Parent Task"
+    assert len(chain["children"]) == 2
+    assert any(c["name"] == "Child Task 1" for c in chain["children"])
+    assert any(c["name"] == "Child Task 2" for c in chain["children"])

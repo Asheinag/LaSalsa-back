@@ -1,8 +1,9 @@
+from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Task
 from app.schemas import TaskCreate, ProjectCreate
-from app.common import TaskStatus
+from app.common import TaskStatus, ProjectStatus, ProjectType
 
 from app.crud.project import get_project_by_id, get_project_by_name, create_project
 
@@ -20,12 +21,22 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
     project = None
 
     if project_id:
-        project = await get_project_by_id(db, project_id)
+        project = await get_project_by_id(db, project_id, user_uid)
 
     if project_name:
-        project = await get_project_by_name(db, project_name)
+        project = await get_project_by_name(db, project_name, user_uid)
         if not project:
-            project = await create_project(db, ProjectCreate(name=task.project_name))
+            project = await create_project(
+                db,
+                ProjectCreate(
+                    name=project_name,
+                    status=ProjectStatus.INACTIVE,
+                    type=ProjectType.LIST,
+                    description=None,
+                    deadline=None,
+                ),
+                user_uid,
+            )
 
     db_task = Task(
         name=task.name,
@@ -36,6 +47,7 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
         closed_at=task.closed_at,
         project_id=project.id if project else None,
         owner_uid=user_uid,
+        parent_id=task.parent_id
     )
 
     db.add(db_task)
@@ -46,7 +58,7 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
 
 async def get_tasks_by_offset(
     db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
-) -> list[Task]:
+) -> Sequence[Task]:
     """Retrieve tasks for a user with pagination."""
     result = await db.execute(
         select(Task).where(Task.owner_uid == user_uid).offset(offset).limit(limit)
@@ -91,9 +103,9 @@ async def update_task(
     task.description = task_data.description
     task.planned_at = task_data.planned_at
     task.closed_at = task_data.closed_at
-    task.status = task_data.status
+    task.status = str(task_data.status)
     task.project_id = task_data.project_id
-    task.project_name = task_data.project_name
+    task.parent_id = task_data.parent_id
     await db.commit()
     await db.refresh(task)
     return task
@@ -119,7 +131,7 @@ async def update_task_status(
 
 async def get_tasks_by_project_id(
     db: AsyncSession, project_id: int, user_uid: str, offset: int = 0, limit: int = 100
-) -> list[Task]:
+) -> Sequence[Task]:
     result = await db.execute(
         select(Task)
         .where(Task.project_id == project_id, Task.owner_uid == user_uid)
@@ -127,3 +139,19 @@ async def get_tasks_by_project_id(
         .limit(limit)
     )
     return result.scalars().all()
+
+
+async def get_task_childs(
+    db: AsyncSession, task_id: int, user_uid: str
+) -> Sequence[Task]:
+    task = await get_task_by_id(db, task_id, user_uid)
+    if not task:
+        return []
+
+    
+    current_task = task
+    result = await db.execute(
+        select(Task).where(Task.parent_id == current_task.id, Task.owner_uid == user_uid)
+    )
+    result = result.scalars().all()
+    return result

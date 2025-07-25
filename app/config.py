@@ -1,12 +1,11 @@
 import os
+
 from dotenv import load_dotenv
 
 # Выбор .env файла
-env_file = {
-    "dev": ".env",
-    "test": ".env.test",
-    "qa": ".env.qa"
-}.get(os.getenv("ENV", "dev"), ".env")
+env_file = {"dev": ".env", "test": ".env.test", "qa": ".env.qa"}.get(
+    os.getenv("ENV", "dev"), ".env"
+)
 
 # Загрузка переменных окружения из выбранного файла
 load_dotenv()

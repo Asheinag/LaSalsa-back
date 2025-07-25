@@ -1,8 +1,11 @@
-from typing import Optional
-from sqlalchemy import ForeignKey, String, Integer, TIMESTAMP
-from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
+
 
 class Project(Base):
     __tablename__ = "projects"

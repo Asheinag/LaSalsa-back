@@ -7,8 +7,9 @@ Create Date: 2025-06-24 23:18:07.966585
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 temp_uid_placeholder = 'hdrJOPKflbhaEFKE6tT6Jmk8gfz1'
 

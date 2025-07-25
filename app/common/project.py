@@ -1,4 +1,5 @@
 from enum import Enum
+
 # ENUM for Project Status
 
 class ProjectStatus(str, Enum):

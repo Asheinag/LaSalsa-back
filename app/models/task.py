@@ -1,8 +1,11 @@
-from typing import Optional
-from sqlalchemy import String, Integer, TIMESTAMP, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
+
 
 # This is a SQLAlchemy model for the Task table
 class Task(Base):
@@ -17,6 +20,3 @@ class Task(Base):
     project_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("projects.id"), nullable=True)
     owner_uid: Mapped[str] = mapped_column(String, nullable=False, index=True)
     parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tasks.id"), nullable=True)
-
-
-

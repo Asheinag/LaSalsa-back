@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Project
 from app.schemas import ProjectCreate
 
-from datetime import datetime
 
 def validate_owner(user_uid: str, project: Project):
     return project.owner_uid == user_uid
@@ -43,10 +43,10 @@ async def get_project_by_name(db: AsyncSession, project_name: str, user_uid: str
 
     if not project:
         return None
-    
+
     if not validate_owner(user_uid, project):
         return None
-    
+
     return project
 
 

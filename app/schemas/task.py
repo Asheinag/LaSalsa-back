@@ -1,7 +1,10 @@
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from app.common import TaskStatus
+
 
 # This is a Pydantic model for the Task schema
 class TaskBase(BaseModel):
@@ -41,7 +44,7 @@ class TaskStatusUpdate(BaseModel):
     id: int = Field(..., title="Status ID", description="Unique identifier for the task status")
     status: TaskStatus = Field(..., title="Task Status", description="Current status of the task")
 
-    model_config = ConfigDict(from_attributes=True)        
+    model_config = ConfigDict(from_attributes=True)
 
 class TaskID(BaseModel):
     id: int = Field(..., title="Task ID", description="Unique identifier for the task")

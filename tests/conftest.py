@@ -16,7 +16,9 @@ for route in app.routes:
 
 @pytest.fixture(scope="function")
 async def client():
-    TEST_DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    TEST_DATABASE_URL = (
+        f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -51,7 +53,9 @@ async def client():
 
 
 # Создание окружения для Celery
-SYNC_DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+SYNC_DATABASE_URL = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 
 sync_engine = create_engine(SYNC_DATABASE_URL)
 SyncSessionLocal = sessionmaker(bind=sync_engine)

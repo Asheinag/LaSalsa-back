@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.celery_app import celery_app
+from app.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
@@ -15,7 +16,7 @@ for route in app.routes:
 
 @pytest.fixture(scope="function")
 async def client():
-    TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5433/test_db"
+    TEST_DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -50,7 +51,7 @@ async def client():
 
 
 # Создание окружения для Celery
-SYNC_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5433/test_db"
+SYNC_DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 sync_engine = create_engine(SYNC_DATABASE_URL)
 SyncSessionLocal = sessionmaker(bind=sync_engine)

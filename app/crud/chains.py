@@ -1,8 +1,8 @@
+from sqlalchemy.orm import Session
+
 from app.celery_app import celery_app
 from app.database import get_sync_session
 from app.models import Task
-from sqlalchemy.orm import Session
-
 
 
 @celery_app.task(name="app.tasks.build_task_chain")

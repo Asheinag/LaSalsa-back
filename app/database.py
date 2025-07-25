@@ -1,7 +1,8 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
-from app.config import DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME  # noqa: E402
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+from app.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER  # noqa: E402
 
 # 👇 Настройка подключения (проверь путь!)
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

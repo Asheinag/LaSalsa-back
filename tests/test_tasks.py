@@ -1,5 +1,6 @@
-import pytest
 from datetime import datetime
+
+import pytest
 from httpx import AsyncClient
 
 from app.celery_app import celery_app
@@ -163,7 +164,7 @@ async def test_get_task_childs(client: AsyncClient):
     ]
     for task_data in tasks_data:
         await create_task_function(client, task_data)
-    
+
     # Get the task chain for the parent task
     response = await client.get("/tasks/1/childs/")
     assert response.status_code == 200

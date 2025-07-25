@@ -1,11 +1,12 @@
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+from app.celery_app import celery_app
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
-from app.celery_app import celery_app
 
 print("== ROUTES ==")
 for route in app.routes:
@@ -23,7 +24,7 @@ async def client():
     async def override_get_async_session():
         async with session_maker() as session:
             yield session
-    
+
     async def override_verify_firebase_token():
         user = {'uid': 'test_user_123'}
         yield user
@@ -37,7 +38,7 @@ async def client():
         await conn.run_sync(Base.metadata.create_all)
 
     # сам клиент
-    from httpx import AsyncClient, ASGITransport
+    from httpx import ASGITransport, AsyncClient
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -83,7 +84,7 @@ def db_session():
 @pytest.fixture(autouse=True)
 def celery_eager():
     celery_app.conf.task_always_eager = True
-    celery_app.conf.task_store_eager_result = True 
+    celery_app.conf.task_store_eager_result = True
     yield
     celery_app.conf.task_always_eager = False
     celery_app.conf.task_store_eager_result = False
@@ -93,7 +94,7 @@ def mock_celery_session(db_session, monkeypatch):
     # Мокаем функцию, которая возвращает сессию
     def get_test_session():
         return db_session
-    
+
     # Мокаем правильный путь к функции
     monkeypatch.setattr("app.database.get_sync_session", get_test_session)
     # Также мокаем в модуле celery_app, если там импортируется по-другому

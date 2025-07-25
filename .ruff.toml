@@ -1,0 +1,24 @@
+[lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # mccabe
+    "B",  # bugbear
+]
+extend-ignore = [
+    "E501",  # line too long
+]
+
+[lint.per-file-ignores]
+# Игнорируем B008 в роутерах FastAPI и зависимостях
+"app/routers/*.py" = ["B008"]
+"app/dependencies.py" = ["B008"]
+
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

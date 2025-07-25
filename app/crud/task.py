@@ -1,13 +1,13 @@
 from collections.abc import Sequence
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.common import ProjectStatus, ProjectType, TaskStatus
+from app.crud.project import create_project, get_project_by_id, get_project_by_name
 from app.models import Task
-from app.schemas import TaskCreate, ProjectCreate
-from app.common import TaskStatus, ProjectStatus, ProjectType
-
-from app.crud.project import get_project_by_id, get_project_by_name, create_project
-
-from datetime import datetime
+from app.schemas import ProjectCreate, TaskCreate
 
 
 def validate_owner(user_uid: str, task: Task) -> bool:
@@ -47,7 +47,7 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
         closed_at=task.closed_at,
         project_id=project.id if project else None,
         owner_uid=user_uid,
-        parent_id=task.parent_id
+        parent_id=task.parent_id,
     )
 
     db.add(db_task)
@@ -148,10 +148,11 @@ async def get_task_childs(
     if not task:
         return []
 
-    
     current_task = task
     result = await db.execute(
-        select(Task).where(Task.parent_id == current_task.id, Task.owner_uid == user_uid)
+        select(Task).where(
+            Task.parent_id == current_task.id, Task.owner_uid == user_uid
+        )
     )
     result = result.scalars().all()
     return result

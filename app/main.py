@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import tasks, projects
+
 from app.firebase_config import initialize_firebase
+from app.routers import projects, tasks
 
 # Инициализация Firebase
 
@@ -29,5 +30,3 @@ app.include_router(projects.router)
 @app.get("/")
 async def root():
     return {"message": "Welcome to LaSalsa API!"}
-
-

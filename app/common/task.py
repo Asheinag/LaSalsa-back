@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 # ENUM for Task Status
 class TaskStatus(str, Enum):
     TODO = "TODO"

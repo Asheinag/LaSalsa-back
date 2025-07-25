@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from app.database import Base, get_async_session, get_sync_session
+from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
 from app.celery_app import celery_app
@@ -54,15 +54,30 @@ SYNC_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5433/test
 sync_engine = create_engine(SYNC_DATABASE_URL)
 SyncSessionLocal = sessionmaker(bind=sync_engine)
 
+# @pytest.fixture(scope="function")
+# def db_session():
+#     Base.metadata.drop_all(bind=sync_engine)
+#     Base.metadata.create_all(bind=sync_engine)
+#     session = SyncSessionLocal()
+#     try:
+#         yield session
+#     finally:
+#         session.close()
+#         Base.metadata.drop_all(bind=sync_engine)
+
 @pytest.fixture(scope="function")
 def db_session():
     Base.metadata.drop_all(bind=sync_engine)
     Base.metadata.create_all(bind=sync_engine)
     session = SyncSessionLocal()
     try:
+        # Устанавливаем тестовую сессию глобально
+        global _test_sync_session
+        _test_sync_session = session
         yield session
     finally:
         session.close()
+        _test_sync_session = None  # Сбрасываем после теста
         Base.metadata.drop_all(bind=sync_engine)
 
 @pytest.fixture(autouse=True)
@@ -73,6 +88,16 @@ def celery_eager():
     celery_app.conf.task_always_eager = False
     celery_app.conf.task_store_eager_result = False
 
+@pytest.fixture
+def mock_celery_session(db_session, monkeypatch):
+    # Мокаем функцию, которая возвращает сессию
+    def get_test_session():
+        return db_session
+    
+    # Мокаем правильный путь к функции
+    monkeypatch.setattr("app.database.get_sync_session", get_test_session)
+    # Также мокаем в модуле celery_app, если там импортируется по-другому
+    monkeypatch.setattr("app.celery_app.get_sync_session", get_test_session)
 
 # @pytest.fixture(autouse=True, scope="function")
 # def clear_test_redis():

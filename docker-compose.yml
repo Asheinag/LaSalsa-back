@@ -1,4 +1,4 @@
-version: '0.2.2'
+version: '0.2.3'
 services:
   dev-db:
     image: postgres:16.9
@@ -8,13 +8,46 @@ services:
       POSTGRES_DB: dev_db
     ports:
       - "5436:5432"
+    volumes:
+      - dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  redis:
+  dev-redis:
     image: redis:7.2
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - dev_redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  dev-celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      dev-redis:
+        condition: service_healthy
+      dev-db:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://dev-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://dev-redis:6379/0
+      - DB_HOST=dev-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=dev_db
+      - DB_PORT=5432
+    volumes:
+      - .:/app
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains", "--pool=solo", "--loglevel=info"]
 
   test-db:
     image: postgres:16.9
@@ -25,7 +58,75 @@ services:
       POSTGRES_DB: test_db
     ports:
       - "5433:5432"
-      
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test-redis:
+    image: redis:7.2
+    ports:
+      - "6380:6379" # Другой порт!
+    volumes:
+      - test_redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Бэкенд для тестового окружения
+  test-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env.test
+    environment:
+      - DB_HOST=test-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=test_db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ENVIRONMENT=test
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  test-celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      test-redis:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://test-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://test-redis:6379/0
+      - DB_HOST=test-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=test_db
+    volumes:
+      - .:/app
+    command: celery -A app.celery_app worker --loglevel=info
+
 volumes:
-  pgdata:
-  redis_data:
+  dev_pgdata:
+  test_pgdata:
+  dev_redis_data:
+  test_redis_data:

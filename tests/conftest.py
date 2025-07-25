@@ -10,9 +10,7 @@ from app.main import app
 
 print("== ROUTES ==")
 for route in app.routes:
-    print(route.path) # type: ignore
-
-
+    print(route.path)  # type: ignore
 
 
 @pytest.fixture(scope="function")
@@ -26,7 +24,7 @@ async def client():
             yield session
 
     async def override_verify_firebase_token():
-        user = {'uid': 'test_user_123'}
+        user = {"uid": "test_user_123"}
         yield user
 
     app.dependency_overrides[get_async_session] = override_get_async_session
@@ -39,6 +37,7 @@ async def client():
 
     # сам клиент
     from httpx import ASGITransport, AsyncClient
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -48,6 +47,7 @@ async def client():
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
+
 
 # Создание окружения для Celery
 SYNC_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5433/test_db"
@@ -66,6 +66,7 @@ SyncSessionLocal = sessionmaker(bind=sync_engine)
 #         session.close()
 #         Base.metadata.drop_all(bind=sync_engine)
 
+
 @pytest.fixture(scope="function")
 def db_session():
     Base.metadata.drop_all(bind=sync_engine)
@@ -81,6 +82,7 @@ def db_session():
         _test_sync_session = None  # Сбрасываем после теста
         Base.metadata.drop_all(bind=sync_engine)
 
+
 @pytest.fixture(autouse=True)
 def celery_eager():
     celery_app.conf.task_always_eager = True
@@ -88,6 +90,7 @@ def celery_eager():
     yield
     celery_app.conf.task_always_eager = False
     celery_app.conf.task_store_eager_result = False
+
 
 @pytest.fixture
 def mock_celery_session(db_session, monkeypatch):
@@ -99,6 +102,7 @@ def mock_celery_session(db_session, monkeypatch):
     monkeypatch.setattr("app.database.get_sync_session", get_test_session)
     # Также мокаем в модуле celery_app, если там импортируется по-другому
     monkeypatch.setattr("app.celery_app.get_sync_session", get_test_session)
+
 
 # @pytest.fixture(autouse=True, scope="function")
 # def clear_test_redis():

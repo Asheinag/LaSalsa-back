@@ -7,7 +7,6 @@ from app.config import SERVICE_ACCOUNT_KEY_PATH
 
 
 def initialize_firebase():
-
     service_account_path = os.getenv("SERVICE_ACCOUNT_KEY_PATH")
 
     # В CI/CD или тестовой среде можно пропустить инициализацию
@@ -16,7 +15,9 @@ def initialize_firebase():
         return
 
     if not os.path.exists(service_account_path):
-        raise ValueError(f"Service account key file not found at {service_account_path}")
+        raise ValueError(
+            f"Service account key file not found at {service_account_path}"
+        )
 
     # Инициализация Firebase Admin SDK
     cred = credentials.Certificate(SERVICE_ACCOUNT_KEY_PATH)

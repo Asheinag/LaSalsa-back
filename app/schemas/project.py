@@ -17,7 +17,9 @@ class ProjectBase(BaseModel):
         title="Project Status",
         description="Current status of the project",
     )
-    owner_uid: str = Field(..., title="Owner UID", description="Unique identifier for the project owner")
+    owner_uid: str = Field(
+        ..., title="Owner UID", description="Unique identifier for the project owner"
+    )
 
 
 # This is a Pydantic model for the Project schema used for creating new projects - same as ProjectBase

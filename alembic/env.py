@@ -56,7 +56,10 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres")
+    url = config.get_main_option(
+        "sqlalchemy.url",
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
+    )
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -70,7 +73,10 @@ def run_migrations_offline() -> None:
 
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    url = config.get_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres")
+    url = config.get_main_option(
+        "sqlalchemy.url",
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
+    )
     connectable = create_async_engine(
         url,
         poolclass=pool.NullPool,

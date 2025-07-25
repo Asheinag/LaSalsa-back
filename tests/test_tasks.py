@@ -8,12 +8,13 @@ from app.models.task import Task
 
 build_task_chain = celery_app.tasks["app.tasks.build_task_chain"]
 
+
 def create_task_function(client: AsyncClient, task_data=None):
     if task_data is None:
         task_data = {
             "name": "Test Task",
             "description": "Created via test",
-            "status": "TODO"
+            "status": "TODO",
         }
     return client.post(
         "/tasks",
@@ -67,9 +68,7 @@ async def test_delete_task(client: AsyncClient):
     task_id = response.json()["id"]
 
     # Delete the task
-    delete_response = await client.request(
-        method="DELETE", url=f"/tasks/{task_id}/"
-    )
+    delete_response = await client.request(method="DELETE", url=f"/tasks/{task_id}/")
     assert delete_response.status_code == 200
     data = delete_response.json()
     assert data["id"] == task_id
@@ -158,9 +157,23 @@ async def test_update_task_status_in_progress(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_task_childs(client: AsyncClient):
     tasks_data = [
-        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
-        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
-        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
+        {
+            "name": "Parent Task",
+            "description": "Parent task description",
+            "status": "TODO",
+        },
+        {
+            "name": "Child Task 1",
+            "description": "Child task 1 description",
+            "status": "TODO",
+            "parent_id": 1,
+        },
+        {
+            "name": "Child Task 2",
+            "description": "Child task 2 description",
+            "status": "TODO",
+            "parent_id": 1,
+        },
     ]
     for task_data in tasks_data:
         await create_task_function(client, task_data)
@@ -173,14 +186,34 @@ async def test_get_task_childs(client: AsyncClient):
     assert response_data[0]["name"] == "Child Task 1"
     assert response_data[1]["name"] == "Child Task 2"
 
+
 @pytest.mark.asyncio
 async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
     # Создаем задачи через API
     tasks_data = [
-        {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
-        {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
-        {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
-        {"name": "Grandchild Task", "description": "Grandchild task description", "status": "TODO", "parent_id": 2},
+        {
+            "name": "Parent Task",
+            "description": "Parent task description",
+            "status": "TODO",
+        },
+        {
+            "name": "Child Task 1",
+            "description": "Child task 1 description",
+            "status": "TODO",
+            "parent_id": 1,
+        },
+        {
+            "name": "Child Task 2",
+            "description": "Child task 2 description",
+            "status": "TODO",
+            "parent_id": 1,
+        },
+        {
+            "name": "Grandchild Task",
+            "description": "Grandchild task description",
+            "status": "TODO",
+            "parent_id": 2,
+        },
     ]
     created_tasks = []
     for task_data in tasks_data:
@@ -197,7 +230,6 @@ async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
     assert len(chain["children"]) == 2
 
 
-
 def test_build_chain_with_direct_db(db_session, monkeypatch):
     from app.crud import chains
 
@@ -205,10 +237,37 @@ def test_build_chain_with_direct_db(db_session, monkeypatch):
     monkeypatch.setattr(chains, "get_sync_session", lambda: db_session)
 
     # Дальше всё как раньше
-    parent = Task(name="Parent Task", description="Parent", status="TODO", created_at=datetime.now(), owner_uid="test_user_123")
-    child1 = Task(name="Child Task 1", description="Child 1", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
-    child2 = Task(name="Child Task 2", description="Child 2", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=1)
-    grandchild = Task(name="Grandchild Task", description="Grandchild", status="TODO", created_at=datetime.now(), owner_uid="test_user_123", parent_id=2)
+    parent = Task(
+        name="Parent Task",
+        description="Parent",
+        status="TODO",
+        created_at=datetime.now(),
+        owner_uid="test_user_123",
+    )
+    child1 = Task(
+        name="Child Task 1",
+        description="Child 1",
+        status="TODO",
+        created_at=datetime.now(),
+        owner_uid="test_user_123",
+        parent_id=1,
+    )
+    child2 = Task(
+        name="Child Task 2",
+        description="Child 2",
+        status="TODO",
+        created_at=datetime.now(),
+        owner_uid="test_user_123",
+        parent_id=1,
+    )
+    grandchild = Task(
+        name="Grandchild Task",
+        description="Grandchild",
+        status="TODO",
+        created_at=datetime.now(),
+        owner_uid="test_user_123",
+        parent_id=2,
+    )
 
     db_session.add_all([parent, child1, child2, grandchild])
     db_session.commit()

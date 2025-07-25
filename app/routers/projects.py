@@ -15,7 +15,9 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("/", response_model=list[ProjectBase])
-async def get_projects_endpoint(db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)):  # noqa: B008
+async def get_projects_endpoint(
+    db: AsyncSession = Depends(get_async_session), user=Depends(verify_firebase_token)
+):  # noqa: B008
     """
     Get a list of projects.
     """
@@ -29,7 +31,9 @@ async def get_projects_endpoint(db: AsyncSession = Depends(get_async_session), u
 
 @router.get("/{project_id}/tasks", response_model=list[TaskShort])
 async def get_tasks_by_project_endpoint(
-    project_id: int, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)  # noqa: B008
+    project_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
     Get tasks by project ID.
@@ -44,7 +48,9 @@ async def get_tasks_by_project_endpoint(
 
 @router.get("/{project_id}", response_model=ProjectRead)
 async def get_project_by_id_endpoint(
-    project_id: int, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)  # noqa: B008
+    project_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
     Get a project by its ID.
@@ -59,7 +65,9 @@ async def get_project_by_id_endpoint(
 
 @router.post("/", response_model=ProjectBase, status_code=201)
 async def create_project_endpoint(
-    project: ProjectCreate, db: AsyncSession = Depends(get_async_session), user = Depends(verify_firebase_token)  # noqa: B008
+    project: ProjectCreate,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
     Create a new project

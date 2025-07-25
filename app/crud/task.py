@@ -47,7 +47,7 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
         closed_at=task.closed_at,
         project_id=project.id if project else None,
         owner_uid=user_uid,
-        parent_id=task.parent_id
+        parent_id=task.parent_id,
     )
 
     db.add(db_task)
@@ -148,10 +148,11 @@ async def get_task_childs(
     if not task:
         return []
 
-
     current_task = task
     result = await db.execute(
-        select(Task).where(Task.parent_id == current_task.id, Task.owner_uid == user_uid)
+        select(Task).where(
+            Task.parent_id == current_task.id, Task.owner_uid == user_uid
+        )
     )
     result = result.scalars().all()
     return result

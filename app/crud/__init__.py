@@ -19,6 +19,7 @@ from .task import (  # noqa: F401
 )
 
 __all__ = [
-    name for name, val in globals().items()
-    if isinstance(val, types.FunctionType) and not name.startswith('_')
-] # type: ignore
+    name
+    for name, val in globals().items()
+    if isinstance(val, types.FunctionType) and not name.startswith("_")
+]  # type: ignore

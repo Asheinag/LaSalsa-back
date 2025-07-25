@@ -19,7 +19,7 @@ def build_task_chain(task_id: int):
 
 def collect_chain(session: Session, task_id: int):
     def recurse(current_id: int) -> dict:
-        task: Task = session.query(Task).filter(Task.id == current_id).first() # type: ignore
+        task: Task = session.query(Task).filter(Task.id == current_id).first()  # type: ignore
         if not task:
             return {}
 

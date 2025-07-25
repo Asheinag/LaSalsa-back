@@ -1,13 +1,41 @@
+import os
+
 import pytest
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.celery_app import celery_app
-from app.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
+
+# Получи путь к корню проекта
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_file_path = os.path.join(project_root, ".env.test")
+
+# Загрузи .env.test с полным путем
+load_dotenv(env_file_path, override=True)
+
+# Используем переменные напрямую из os.environ
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_NAME = os.getenv("DB_NAME")
+DB_PORT = os.getenv("DB_PORT")
+
+print(
+    f"DB_HOST: {DB_HOST}, DB_USER: {DB_USER}, DB_NAME: {DB_NAME}, DB_PORT: {DB_PORT}, DB_PASS: {DB_PASS}"
+)
+
+TEST_DATABASE_URL = (
+    f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+SYNC_DATABASE_URL = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
 
 print("== ROUTES ==")
 for route in app.routes:
@@ -16,9 +44,6 @@ for route in app.routes:
 
 @pytest.fixture(scope="function")
 async def client():
-    TEST_DATABASE_URL = (
-        f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -51,11 +76,6 @@ async def client():
 
     await engine.dispose()
 
-
-# Создание окружения для Celery
-SYNC_DATABASE_URL = (
-    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-)
 
 sync_engine = create_engine(SYNC_DATABASE_URL)
 SyncSessionLocal = sessionmaker(bind=sync_engine)

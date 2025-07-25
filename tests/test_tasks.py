@@ -173,19 +173,26 @@ async def test_get_task_childs(client: AsyncClient):
     assert response_data[1]["name"] == "Child Task 2"
 
 @pytest.mark.asyncio
-async def test_create_task_chain(client: AsyncClient):
+async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
+    # Создаем задачи через API
     tasks_data = [
         {"name": "Parent Task", "description": "Parent task description", "status": "TODO"},
         {"name": "Child Task 1", "description": "Child task 1 description", "status": "TODO", "parent_id": 1},
         {"name": "Child Task 2", "description": "Child task 2 description", "status": "TODO", "parent_id": 1},
         {"name": "Grandchild Task", "description": "Grandchild task description", "status": "TODO", "parent_id": 2},
     ]
+    created_tasks = []
     for task_data in tasks_data:
-        await create_task_function(client, task_data)
+        response = await create_task_function(client, task_data)
+        assert response.status_code == 201
+        created_tasks.append(response.json())
 
-    result = build_task_chain.apply((1,), throw=True)
-    chain = result.get()
-    assert chain["id"] == 1
+    # Запускаем Celery задачу (она будет выполнена синхронно благодаря task_always_eager)
+    monkeypatch.setattr("app.crud.chains.get_sync_session", lambda: db_session)
+    result = build_task_chain.delay(created_tasks[0]["id"])
+    chain = result.get(timeout=10)
+
+    assert chain["id"] == created_tasks[0]["id"]  # Используем реальный ID из ответа
     assert len(chain["children"]) == 2
 
 

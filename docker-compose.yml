@@ -93,8 +93,8 @@ services:
       - DB_PASS=postgres
       - DB_NAME=test_db
       - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://test-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://test-redis:6379/0
       - ENVIRONMENT=test
     depends_on:
       test-db:

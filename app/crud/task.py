@@ -103,7 +103,7 @@ async def update_task(
     task.description = task_data.description
     task.planned_at = task_data.planned_at
     task.closed_at = task_data.closed_at
-    task.status = str(task_data.status)
+    task.status = task_data.status
     task.project_id = task_data.project_id
     task.parent_id = task_data.parent_id
     await db.commit()

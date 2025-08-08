@@ -8,7 +8,7 @@ env_file = {"dev": ".env", "test": ".env.test", "qa": ".env.qa"}.get(
 )
 
 # Загрузка переменных окружения из выбранного файла
-load_dotenv()
+load_dotenv(env_file, override=True)
 
 # Получение нужных переменных
 DB_USER = os.getenv("DB_USER")

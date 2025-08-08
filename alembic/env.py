@@ -13,17 +13,17 @@ from app.models import *  # noqa: F403
 env_file = os.environ.get(
     "ENV_FILE", ".env.dev"
 )  # например, передаётся через окружение
-load_dotenv(dotenv_path=env_file)
+load_dotenv(dotenv_path=env_file, override=True)
 
 config = context.config
 # Load environment variables from the config
 section = config.config_ini_section
-config.set_section_option(section, "DB_HOST", os.getenv("DB_HOST", "localhost"))
-config.set_section_option(section, "DB_PORT", os.getenv("DB_PORT", "5432"))
-config.set_section_option(section, "DB_USER", os.getenv("DB_USER", "postgres"))
-config.set_section_option(section, "DB_NAME", os.getenv("DB_NAME", "postgres"))
-config.set_section_option(section, "DB_PASS", os.getenv("DB_PASS", "postgres"))
-
+config.set_section_option(section, "DB_HOST", os.getenv("DB_HOST", ""))
+config.set_section_option(section, "DB_PORT", os.getenv("DB_PORT", ""))
+config.set_section_option(section, "DB_USER", os.getenv("DB_USER", ""))
+config.set_section_option(section, "DB_NAME", os.getenv("DB_NAME", ""))
+config.set_section_option(section, "DB_PASS", os.getenv("DB_PASS", ""))
+print(f"Using DB_HOST: {os.getenv('DB_HOST')}, DB_USER: {os.getenv('DB_USER')}, DB_NAME: {os.getenv('DB_NAME')}, DB_PORT: {os.getenv('DB_PORT')}, DB_PASS: {os.getenv('DB_PASS')}")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

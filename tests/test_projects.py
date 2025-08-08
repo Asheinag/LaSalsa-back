@@ -11,6 +11,19 @@ def create_project_function(client: AsyncClient, project_name: str = "Test Proje
     )
 
 
+def create_task_function(client: AsyncClient, task_data=None):
+    if task_data is None:
+        task_data = {
+            "name": "Test Task",
+            "description": "Created via test",
+            "status": "TODO",
+        }
+    return client.post(
+        "/tasks",
+        json=task_data,
+    )
+
+
 @pytest.mark.asyncio
 async def test_create_project(client: AsyncClient):
     """
@@ -127,3 +140,41 @@ async def test_unsuccessful_create_project_with_invalid_type(client: AsyncClient
         },
     )
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_by_project(client: AsyncClient):
+    project_response = await create_project_function(client, "Project With Tasks")
+    project_id = project_response.json()["id"]
+    await create_task_function(
+        client,
+        {
+            "name": "Task 1",
+            "description": "Task 1 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+    await create_task_function(
+        client,
+        {
+            "name": "Task 2",
+            "description": "Task 2 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+
+    response = await client.get(f"/projects/{project_id}/tasks")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert all(task["project_id"] == project_id for task in data)
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_by_project_not_found(client: AsyncClient):
+    project_response = await create_project_function(client, "Empty Project")
+    project_id = project_response.json()["id"]
+    response = await client.get(f"/projects/{project_id}/tasks")
+    assert response.status_code == 404

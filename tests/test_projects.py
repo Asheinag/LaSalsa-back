@@ -23,6 +23,7 @@ def create_task_function(client: AsyncClient, task_data=None):
         json=task_data,
     )
 
+
 @pytest.mark.asyncio
 async def test_create_project(client: AsyncClient):
     """

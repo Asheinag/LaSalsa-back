@@ -43,7 +43,9 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
         description=task.description,
         planned_at=task.planned_at,
         created_at=datetime.now(),
-        status=task.status.value if isinstance(task.status, TaskStatus) else task.status,
+        status=task.status.value
+        if isinstance(task.status, TaskStatus)
+        else task.status,
         closed_at=task.closed_at,
         project_id=project.id if project else None,
         owner_uid=user_uid,

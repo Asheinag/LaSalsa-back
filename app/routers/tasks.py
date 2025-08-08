@@ -8,7 +8,7 @@ from app.crud import (
     create_task,
     delete_task,
     get_task_by_id,
-    get_task_childs,
+    get_task_children,
     get_tasks_by_offset,
     update_task,
     update_task_status,
@@ -127,7 +127,7 @@ async def update_task_status_endpoint(
     return task
 
 
-@router.get("/{task_id}/childs/", response_model=list[TaskRead])
+@router.get("/{task_id}/children/", response_model=list[TaskRead])
 async def get_chain_tasks_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
@@ -140,7 +140,7 @@ async def get_chain_tasks_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_uid = user.get("uid")
-    tasks = await get_task_childs(db, task_id, user_uid)
+    tasks = await get_task_children(db, task_id, user_uid)
     return tasks
 
 

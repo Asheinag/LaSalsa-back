@@ -57,6 +57,14 @@ async def test_get_projects(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_get_projects_empty(client: AsyncClient):
+    """Return empty list when no projects exist."""
+    response = await client.get("/projects/")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
 async def test_get_project_by_id(client: AsyncClient):
     """
     Test getting a project by its ID.
@@ -177,4 +185,5 @@ async def test_get_tasks_by_project_not_found(client: AsyncClient):
     project_response = await create_project_function(client, "Empty Project")
     project_id = project_response.json()["id"]
     response = await client.get(f"/projects/{project_id}/tasks")
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json() == []

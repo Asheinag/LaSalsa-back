@@ -1,6 +1,9 @@
 from celery import Celery
 
 from app.config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
+from app.logging_config import configure_logging
+
+configure_logging()
 
 # Создание экземпляра Celery
 celery_app = Celery(

@@ -1,19 +1,22 @@
+from celery.utils.log import get_task_logger
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
 from app.database import get_sync_session
 from app.models import Task
 
+logger = get_task_logger(__name__)
+
 
 @celery_app.task(name="app.tasks.build_task_chain")
 def build_task_chain(task_id: int):
-    print(f"[TASK] Starting task for task_id={task_id}")
+    logger.info("Starting task for task_id=%s", task_id)
     try:
         with get_sync_session() as session:
             result = collect_chain(session, task_id)
             return result
     except Exception as e:
-        print(f"[TASK] Error in task for task_id={task_id}: {e}")
+        logger.exception("Error in task for task_id=%s", task_id)
         raise e
 
 

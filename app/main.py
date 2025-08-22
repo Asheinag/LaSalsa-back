@@ -7,12 +7,14 @@ from app.routers import projects, tasks
 
 configure_logging()
 
-# Инициализация Firebase
-
-initialize_firebase()
-
-
 app = FastAPI(title="LaSalsa API", version="0.1.0")
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize services on application startup."""
+    initialize_firebase()
+
 
 origins = [
     "http://localhost",

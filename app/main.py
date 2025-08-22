@@ -7,7 +7,6 @@ from app.routers import projects, tasks
 
 configure_logging()
 
-
 app = FastAPI(title="LaSalsa API", version="0.1.0")
 
 

@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.firebase_config import initialize_firebase
+from app.logging_config import configure_logging
 from app.routers import projects, tasks
+
+configure_logging()
 
 # Инициализация Firebase
 

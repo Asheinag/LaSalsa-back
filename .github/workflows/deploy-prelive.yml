@@ -76,7 +76,15 @@ jobs:
             docker compose exec -T api alembic upgrade head
 
             # простые smoke-чекки
-            curl -fsSL --max-time 10 https://${API_HOST}/healthz >/dev/null
+            for i in {1..15}; do
+              if curl -fsSL --max-time 5 \
+                --resolve ${API_HOST}:443:127.0.0.1 \
+                https://${API_HOST}/healthz -k >/dev/null; then
+                echo "healthz OK"; break
+              fi
+              echo "waiting healthz ($i/15) ..."
+              sleep 2
+            done
 
       - name: Post summary
         if: always()

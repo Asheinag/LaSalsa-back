@@ -36,6 +36,7 @@ app.include_router(projects.router)
 async def root():
     return {"message": "Welcome to LaSalsa API!"}
 
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}

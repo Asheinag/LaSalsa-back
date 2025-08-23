@@ -24,6 +24,7 @@ jobs:
       IMAGE_NAME: ghcr.io/kabachok-club/lasalsa-back
       SHA_TAG: prelive-${{ github.sha }}
       LATEST_TAG: prelive-latest
+      API_HOST: api.prelive.lasalsa.kabachok.club 
 
     steps:
       - name: Checkout

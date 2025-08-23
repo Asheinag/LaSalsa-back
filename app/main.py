@@ -2,14 +2,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.firebase_config import initialize_firebase
+from app.logging_config import configure_logging
 from app.routers import projects, tasks
 
-# Инициализация Firebase
-
-initialize_firebase()
-
+configure_logging()
 
 app = FastAPI(title="LaSalsa API", version="0.1.0")
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize services on application startup."""
+    initialize_firebase()
+
 
 origins = [
     "http://localhost",

@@ -155,7 +155,7 @@ async def test_update_task_status_in_progress(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_task_childs(client: AsyncClient):
+async def test_get_task_children(client: AsyncClient):
     tasks_data = [
         {
             "name": "Parent Task",
@@ -179,7 +179,7 @@ async def test_get_task_childs(client: AsyncClient):
         await create_task_function(client, task_data)
 
     # Get the task chain for the parent task
-    response = await client.get("/tasks/1/childs/")
+    response = await client.get("/tasks/1/children/")
     assert response.status_code == 200
     response_data = response.json()
     assert len(response_data) == 2
@@ -279,3 +279,29 @@ def test_build_chain_with_direct_db(db_session, monkeypatch):
     assert len(chain["children"]) == 2
     assert any(c["name"] == "Child Task 1" for c in chain["children"])
     assert any(c["name"] == "Child Task 2" for c in chain["children"])
+
+
+@pytest.mark.asyncio
+async def test_get_task_by_id_not_found(client: AsyncClient):
+    response = await client.get("/tasks/9999")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_task_status_resets_closed_at(client: AsyncClient):
+    response = await create_task_function(client)
+    task_id = response.json()["id"]
+
+    done_response = await client.patch(
+        "/tasks/status", json={"id": task_id, "status": "DONE"}
+    )
+    assert done_response.status_code == 200
+    assert done_response.json()["closed_at"] is not None
+
+    reset_response = await client.patch(
+        "/tasks/status", json={"id": task_id, "status": "TODO"}
+    )
+    assert reset_response.status_code == 200
+    data = reset_response.json()
+    assert data["status"] == "TODO"
+    assert data["closed_at"] is None

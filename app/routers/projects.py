@@ -23,9 +23,6 @@ async def get_projects_endpoint(
     """
     user_uid = user.get("uid")
     projects = await get_projects(db, user_uid)
-    if not projects:
-        raise HTTPException(status_code=404, detail="No projects found")
-
     return projects
 
 
@@ -40,9 +37,6 @@ async def get_tasks_by_project_endpoint(
     """
     user_uid = user.get("uid")
     tasks = await get_tasks_by_project_id(db, project_id, user_uid)
-    if not tasks:
-        raise HTTPException(status_code=404, detail="No tasks found for this project")
-
     return tasks
 
 

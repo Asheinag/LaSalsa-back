@@ -11,7 +11,7 @@ from .task import (  # noqa: F401
     create_task,
     delete_task,
     get_task_by_id,
-    get_task_childs,
+    get_task_children,
     get_tasks_by_offset,
     get_tasks_by_project_id,
     update_task,

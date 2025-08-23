@@ -43,7 +43,9 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
         description=task.description,
         planned_at=task.planned_at,
         created_at=datetime.now(),
-        status=task.status,
+        status=task.status.value
+        if isinstance(task.status, TaskStatus)
+        else task.status,
         closed_at=task.closed_at,
         project_id=project.id if project else None,
         owner_uid=user_uid,
@@ -103,7 +105,11 @@ async def update_task(
     task.description = task_data.description
     task.planned_at = task_data.planned_at
     task.closed_at = task_data.closed_at
-    task.status = task_data.status
+    task.status = (
+        task_data.status.value
+        if isinstance(task_data.status, TaskStatus)
+        else task_data.status
+    )
     task.project_id = task_data.project_id
     task.parent_id = task_data.parent_id
     await db.commit()
@@ -119,7 +125,7 @@ async def update_task_status(
         return None
     if not validate_owner(user_uid, task):
         return None
-    task.status = status
+    task.status = status.value
     if status == TaskStatus.DONE:
         task.closed_at = datetime.now()
     else:
@@ -141,7 +147,7 @@ async def get_tasks_by_project_id(
     return result.scalars().all()
 
 
-async def get_task_childs(
+async def get_task_children(
     db: AsyncSession, task_id: int, user_uid: str
 ) -> Sequence[Task]:
     task = await get_task_by_id(db, task_id, user_uid)

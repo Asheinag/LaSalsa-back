@@ -3,9 +3,8 @@ name: Deploy Prelive (backend)
 on:
   push:
     branches: [ "test" ]
-    paths:
-      - "backend/**"
-      - ".github/workflows/deploy-prelive.yml"
+  workflow_dispatch: {}
+
 
 permissions:
   contents: read
@@ -40,7 +39,8 @@ jobs:
       - name: Build & Push backend image (SHA + latest)
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: .                # ← было ./backend
+          file: ./Dockerfile        # ← явно указываем Dockerfile в корне
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.SHA_TAG }}

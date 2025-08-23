@@ -76,7 +76,7 @@ jobs:
             docker compose exec -T api alembic upgrade head
 
             # простые smoke-чекки
-            curl -fsSL --max-time 10 https://${API_HOST}/ >/dev/null
+            curl -fsSL --max-time 10 https://${API_HOST}/healthz >/dev/null
 
       - name: Post summary
         if: always()

@@ -22,7 +22,7 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ghcr.io/${{ github.repository }}
+      IMAGE_NAME: ghcr.io/kabachok-club/lasalsa-back
       SHA_TAG: prelive-${{ github.sha }}
       LATEST_TAG: prelive-latest
 

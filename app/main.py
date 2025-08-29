@@ -22,7 +22,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # на проде лучше ограничить
+    allow_origins=[
+        "https://app.prelive.lasalsa.kabachok.club",
+        "http://localhost:5173",
+    ],  # на проде лучше ограничить
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

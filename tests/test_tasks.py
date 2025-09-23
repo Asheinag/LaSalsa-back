@@ -17,7 +17,7 @@ def create_task_function(client: AsyncClient, task_data=None):
             "status": "TODO",
         }
     return client.post(
-        "/tasks",
+        "/tasks/",
         json=task_data,
     )
 
@@ -68,10 +68,8 @@ async def test_delete_task(client: AsyncClient):
     task_id = response.json()["id"]
 
     # Delete the task
-    delete_response = await client.request(method="DELETE", url=f"/tasks/{task_id}/")
-    assert delete_response.status_code == 200
-    data = delete_response.json()
-    assert data["id"] == task_id
+    delete_response = await client.request(method="DELETE", url=f"/tasks/{task_id}")
+    assert delete_response.status_code == 204
 
     # Verify the task is deleted
     get_response = await client.get("/tasks/?offset=0&limit=100")
@@ -305,3 +303,97 @@ async def test_update_task_status_resets_closed_at(client: AsyncClient):
     data = reset_response.json()
     assert data["status"] == "TODO"
     assert data["closed_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_today(client: AsyncClient):
+    # Create tasks with different planned_at dates
+    from datetime import datetime, timedelta
+
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+
+    tasks_data = [
+        {
+            "name": "Task Today 1",
+            "description": "Task planned for today",
+            "status": "TODO",
+            "planned_at": today.isoformat(),
+        },
+        {
+            "name": "Task Today 2",
+            "description": "Another task planned for today",
+            "status": "TODO",
+            "planned_at": today.isoformat(),
+        },
+        {
+            "name": "Task Yesterday",
+            "description": "Task planned for yesterday",
+            "status": "TODO",
+            "planned_at": yesterday.isoformat(),
+        },
+        {
+            "name": "Task Tomorrow",
+            "description": "Task planned for tomorrow",
+            "status": "TODO",
+            "planned_at": tomorrow.isoformat(),
+        },
+    ]
+
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+
+    # Now get today's tasks
+    response = await client.get("/tasks/today")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2  # Only the two tasks planned for today
+    task_names = [task["name"] for task in data]
+    assert "Task Today 1" in task_names
+    assert "Task Today 2" in task_names
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_later(client: AsyncClient):
+    # Create tasks with different planned_at dates
+    from datetime import datetime, timedelta
+
+    today = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
+    day_after_tomorrow = today + timedelta(days=2)
+
+    tasks_data = [
+        {
+            "name": "Task Tomorrow",
+            "description": "Task planned for tomorrow",
+            "status": "TODO",
+            "planned_at": tomorrow.isoformat(),
+        },
+        {
+            "name": "Task Day After Tomorrow",
+            "description": "Task planned for the day after tomorrow",
+            "status": "TODO",
+            "planned_at": day_after_tomorrow.isoformat(),
+        },
+        {
+            "name": "Task Today",
+            "description": "Task planned for today",
+            "status": "TODO",
+            "planned_at": today.isoformat(),
+        },
+    ]
+
+    for task_data in tasks_data:
+        await create_task_function(client, task_data)
+
+    # Now get later tasks
+    response = await client.get("/tasks/later")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2  # Only the two tasks planned for later
+    task_names = [task["name"] for task in data]
+    assert "Task Tomorrow" in task_names
+    assert "Task Day After Tomorrow" in task_names

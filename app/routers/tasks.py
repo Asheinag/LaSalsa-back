@@ -67,11 +67,8 @@ async def get_tasks_today_endpoint(
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    print("limit", limit, "offset", offset)
     user_uid = user.get("uid")
-    print("uid", user_uid)
     tasks = await get_tasks_today(db, user_uid, offset, limit)
-    print(tasks)
     return tasks
 
 

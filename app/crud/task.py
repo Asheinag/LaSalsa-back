@@ -168,7 +168,6 @@ async def get_tasks_today(
     db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
 ) -> Sequence[Task]:
     today = datetime.now().date()
-    print("limit", limit, "offset", offset)
     result = await db.execute(
         select(Task)
         .where(
@@ -180,7 +179,6 @@ async def get_tasks_today(
         .offset(offset)
         .limit(limit)
     )
-    print(result)
     return result.scalars().all()
 
 

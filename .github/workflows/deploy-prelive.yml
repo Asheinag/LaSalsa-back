@@ -49,7 +49,7 @@ jobs:
           # если нужен кэш, можно добавить cache-from/to: type=gha
 
       - name: Deploy on server via SSH (pull & up & migrate)
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST_PRELIVE }}
           username: ${{ secrets.SSH_USER }}

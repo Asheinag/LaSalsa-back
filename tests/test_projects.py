@@ -19,7 +19,7 @@ def create_task_function(client: AsyncClient, task_data=None):
             "status": "TODO",
         }
     return client.post(
-        "/tasks",
+        "/tasks/",
         json=task_data,
     )
 

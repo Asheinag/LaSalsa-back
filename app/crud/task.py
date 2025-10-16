@@ -162,3 +162,38 @@ async def get_task_children(
     )
     result = result.scalars().all()
     return result
+
+
+async def get_tasks_today(
+    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
+) -> Sequence[Task]:
+    today = datetime.now().date()
+    result = await db.execute(
+        select(Task)
+        .where(
+            Task.planned_at != None,  # noqa: E711
+            Task.planned_at >= datetime.combine(today, datetime.min.time()),
+            Task.planned_at <= datetime.combine(today, datetime.max.time()),
+            Task.owner_uid == user_uid,
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
+async def get_tasks_later(
+    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
+) -> Sequence[Task]:
+    today = datetime.now().date()
+    result = await db.execute(
+        select(Task)
+        .where(
+            Task.planned_at != None,  # noqa: E711
+            Task.planned_at > datetime.combine(today, datetime.max.time()),
+            Task.owner_uid == user_uid,
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+    return result.scalars().all()

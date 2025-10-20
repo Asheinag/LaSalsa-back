@@ -1,7 +1,9 @@
 import os
+from typing import Callable, Coroutine
 
 import pytest
 from dotenv import load_dotenv
+from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -80,17 +82,6 @@ async def client():
 sync_engine = create_engine(SYNC_DATABASE_URL)
 SyncSessionLocal = sessionmaker(bind=sync_engine)
 
-# @pytest.fixture(scope="function")
-# def db_session():
-#     Base.metadata.drop_all(bind=sync_engine)
-#     Base.metadata.create_all(bind=sync_engine)
-#     session = SyncSessionLocal()
-#     try:
-#         yield session
-#     finally:
-#         session.close()
-#         Base.metadata.drop_all(bind=sync_engine)
-
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -129,9 +120,38 @@ def mock_celery_session(db_session, monkeypatch):
     monkeypatch.setattr("app.celery_app.get_sync_session", get_test_session)
 
 
-# @pytest.fixture(autouse=True, scope="function")
-# def clear_test_redis():
-#     r = redis.Redis(host="localhost", port=6380, db=0)
-#     r.flushall()
-#     yield
-#     r.flushall()
+@pytest.fixture
+def create_project_factory(client: AsyncClient) -> Callable[..., Coroutine]:
+    """
+    Фикстура-фабрика для создания задачи.
+    Возвращает саму асинхронную функцию.
+    """
+
+    async def _create_project(project_name: str = "Test Project"):
+        return await client.post(
+            "/projects/",
+            json={
+                "name": project_name,
+            },
+        )
+
+    return _create_project
+
+
+@pytest.fixture
+def create_task_factory(client: AsyncClient) -> Callable[..., Coroutine]:
+    """
+    Фикстура-фабрика для создания задачи.
+    Возвращает саму асинхронную функцию.
+    """
+
+    async def _create_task(task_data=None):
+        if task_data is None:
+            task_data = {
+                "name": "Test Task",
+                "description": "Created via test",
+                "status": "TODO",
+            }
+        return await client.post("/tasks/", json=task_data)
+
+    return _create_task

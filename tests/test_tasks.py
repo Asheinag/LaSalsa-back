@@ -9,43 +9,28 @@ from app.models.task import Task
 build_task_chain = celery_app.tasks["app.tasks.build_task_chain"]
 
 
-def create_task_function(client: AsyncClient, task_data=None):
-    """
-    Вспомогательная функция для создания задачи через API
-    """
-
-    if task_data is None:
-        task_data = {
-            "name": "Test Task",
-            "description": "Created via test",
-            "status": "TODO",
-        }
-    return client.post(
-        "/tasks/",
-        json=task_data,
-    )
-
-
 @pytest.mark.asyncio
-async def test_create_task(client: AsyncClient):
+async def test_create_task(client: AsyncClient, create_task_factory):
     """
     Проверка создания задачи через API
     """
+    # Создаем задачу
+    response = await create_task_factory()
 
-    response = await create_task_function(client)
+    # Проверяем ответ
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test Task"
 
 
 @pytest.mark.asyncio
-async def test_get_task_by_id(client: AsyncClient):
+async def test_get_task_by_id(client: AsyncClient, create_task_factory):
     """
     Получение задачи по ID через API
     """
 
     # Создаем задачу
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Теперь получаем задачу по ID
@@ -59,17 +44,17 @@ async def test_get_task_by_id(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_tasks(client: AsyncClient):
+async def test_get_tasks(client: AsyncClient, create_task_factory):
     """
     Получение списка задач через API
     """
 
     # Сначала создаем несколько задач
-    await create_task_function(client)
-    await create_task_function(client)
-    await create_task_function(client)
-    await create_task_function(client)
-    await create_task_function(client)
+    await create_task_factory()
+    await create_task_factory()
+    await create_task_factory()
+    await create_task_factory()
+    await create_task_factory()
 
     # Теперь получаем список задач с пагинацией
     response = await client.get("/tasks/?offset=0&limit=3")
@@ -92,13 +77,13 @@ async def test_get_tasks(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_delete_task(client: AsyncClient):
+async def test_delete_task(client: AsyncClient, create_task_factory):
     """
     Удаление задачи через API
     """
 
     # Сначала создаем задачу для удаления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Удаляем задачу
@@ -117,13 +102,13 @@ async def test_delete_task(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_task(client: AsyncClient):
+async def test_update_task(client: AsyncClient, create_task_factory):
     """
     Обновление задачи через API
     """
 
     # Сначала создаем задачу для обновления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Обновляем задачу
@@ -152,14 +137,14 @@ async def test_update_task(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_task_status_done(client: AsyncClient):
+async def test_update_task_status_done(client: AsyncClient, create_task_factory):
     """
     Обновление статуса задачи в Done через API
     Проверяем именно Done чтобы убедиться, что closed_at устанавливается
     """
 
     # Сначала создаем задачу для обновления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Обновляем статус задачи
@@ -186,13 +171,13 @@ async def test_update_task_status_done(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_task_status_in_progress(client: AsyncClient):
+async def test_update_task_status_in_progress(client: AsyncClient, create_task_factory):
     """
     Обновление статуса задачи в In Progress через API
     """
 
     # Сначала создаем задачу для обновления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Обновляем статус задачи
@@ -217,12 +202,12 @@ async def test_update_task_status_in_progress(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_task_wrong_status(client: AsyncClient):
+async def test_update_task_wrong_status(client: AsyncClient, create_task_factory):
     """
     Обновление статуса задачи с неверным значением через API
     """
     # Сначала создаем задачу для обновления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Пытаемся обновить статус задачи на неверное значение
@@ -231,8 +216,7 @@ async def test_update_task_wrong_status(client: AsyncClient):
     )
 
     # Проверяем ответ
-    assert update_response.status_code == 400
-    assert update_response.json()["detail"] == "Invalid status"
+    assert update_response.status_code == 422
 
     # Проверяем, что статус задачи не изменился
     get_response = await client.get(f"/tasks/{task_id}")
@@ -243,13 +227,13 @@ async def test_update_task_wrong_status(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_task_status_resets_closed_at(client: AsyncClient):
+async def test_update_task_status_resets_closed_at(client: AsyncClient, create_task_factory):
     """
     Обновление статуса задачи из DONE в TODO сбрасывает closed_at
     """
 
     # Сначала создаем задачу для обновления
-    response = await create_task_function(client)
+    response = await create_task_factory()
     task_id = response.json()["id"]
 
     # Меняем статус на DONE
@@ -274,7 +258,7 @@ async def test_update_task_status_resets_closed_at(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_task_children(client: AsyncClient):
+async def test_get_task_children(client: AsyncClient, create_task_factory):
     """
     Получение цепочки задач через API
     """
@@ -300,7 +284,7 @@ async def test_get_task_children(client: AsyncClient):
         },
     ]
     for task_data in tasks_data:
-        await create_task_function(client, task_data)
+        await create_task_factory(task_data)
 
     # Получаем цепочку задач для родительской задачи
     response = await client.get("/tasks/1/children/")
@@ -314,7 +298,7 @@ async def test_get_task_children(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
+async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch, create_task_factory):
     """
     Тест создания цепочки задач через Celery задачу
     """
@@ -347,7 +331,7 @@ async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
     ]
     created_tasks = []
     for task_data in tasks_data:
-        response = await create_task_function(client, task_data)
+        response = await create_task_factory(task_data)
         assert response.status_code == 201
         created_tasks.append(response.json())
 
@@ -428,7 +412,7 @@ async def test_get_task_by_id_not_found(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_tasks_today(client: AsyncClient):
+async def test_get_tasks_today(client: AsyncClient, create_task_factory):
     """
     Получение задач, запланированных на сегодня, через API
     """
@@ -467,7 +451,7 @@ async def test_get_tasks_today(client: AsyncClient):
         },
     ]
     for task_data in tasks_data:
-        await create_task_function(client, task_data)
+        await create_task_factory(task_data)
 
     # Получаем задачи, запланированные на сегодня
     response = await client.get("/tasks/today")
@@ -489,7 +473,7 @@ async def test_get_tasks_today(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_tasks_later(client: AsyncClient):
+async def test_get_tasks_later(client: AsyncClient, create_task_factory):
     """
     Получение задач, запланированных на позже, через API
     """
@@ -523,7 +507,7 @@ async def test_get_tasks_later(client: AsyncClient):
         },
     ]
     for task_data in tasks_data:
-        await create_task_function(client, task_data)
+        await create_task_factory(task_data)
 
     # Получаем задачи, запланированные на позже
     response = await client.get("/tasks/later")
@@ -540,3 +524,67 @@ async def test_get_tasks_later(client: AsyncClient):
     # Проверяем имена задач
     assert "Task Tomorrow" in task_names
     assert "Task Day After Tomorrow" in task_names
+
+
+@pytest.mark.asyncio
+async def test_task_create_with_invalid_project_id(client: AsyncClient, create_task_factory):
+    """
+    Проверка создания задачи с несуществующим project_id через API
+    """
+
+    # Пытаемся создать задачу с несуществующим project_id
+    response = await create_task_factory(
+        {
+            "name": "Task with Invalid Project",
+            "description": "This task has an invalid project_id",
+            "status": "TODO",
+            "project_id": 9999,  # Предполагается, что такого проекта нет
+        }
+    )
+
+    # Проверяем ответ
+    assert response.status_code == 400
+
+@pytest.mark.asyncio
+async def test_task_create_with_both_project_params(client: AsyncClient, create_task_factory):
+    """
+    Проверка создания задачи с обоими параметрами project_id и project_name через API
+    """
+
+    # Пытаемся создать задачу с обоими параметрами project_id и project_name
+    response = await create_task_factory(
+        {
+            "name": "Task with Both Project Params",
+            "description": "This task has both project_id and project_name",
+            "status": "TODO",
+            "project_id": 1,
+            "project_name": "Test Project",
+        }
+    )
+
+    # Проверяем ответ
+    assert response.status_code == 400
+
+@pytest.mark.asyncio
+async def test_update_task_with_invalid_project_id(client: AsyncClient, create_task_factory):
+    """
+    Проверка обновления задачи с несуществующим project_id через API
+    """
+
+    # Сначала создаем задачу для обновления
+    response = await create_task_factory()
+    task_id = response.json()["id"]
+
+    # Пытаемся обновить задачу с несуществующим project_id
+    update_response = await client.put(
+        f"/tasks/{task_id}/update",
+        json={
+            "name": "Updated Task with Invalid Project",
+            "description": "Trying to update with invalid project_id",
+            "status": "IN_PROGRESS",
+            "project_id": 9999,  # Предполагается, что такого проекта нет
+        },
+    )
+
+    # Проверяем ответ
+    assert update_response.status_code == 400

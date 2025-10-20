@@ -10,6 +10,10 @@ build_task_chain = celery_app.tasks["app.tasks.build_task_chain"]
 
 
 def create_task_function(client: AsyncClient, task_data=None):
+    """
+    Вспомогательная функция для создания задачи через API
+    """
+
     if task_data is None:
         task_data = {
             "name": "Test Task",
@@ -24,6 +28,10 @@ def create_task_function(client: AsyncClient, task_data=None):
 
 @pytest.mark.asyncio
 async def test_create_task(client: AsyncClient):
+    """
+    Проверка создания задачи через API
+    """
+
     response = await create_task_function(client)
     assert response.status_code == 201
     data = response.json()
@@ -32,12 +40,18 @@ async def test_create_task(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_task_by_id(client: AsyncClient):
-    # First create a task to get
+    """
+    Получение задачи по ID через API
+    """
+
+    # Создаем задачу
     response = await create_task_function(client)
     task_id = response.json()["id"]
 
-    # Now get the task by ID
+    # Теперь получаем задачу по ID
     get_response = await client.get(f"/tasks/{task_id}")
+
+    # Проверяем ответ
     assert get_response.status_code == 200
     data = get_response.json()
     assert data["id"] == task_id
@@ -46,32 +60,56 @@ async def test_get_task_by_id(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_tasks(client: AsyncClient):
-    # First create a task to get
+    """
+    Получение списка задач через API
+    """
+
+    # Сначала создаем несколько задач
+    await create_task_function(client)
+    await create_task_function(client)
     await create_task_function(client)
     await create_task_function(client)
     await create_task_function(client)
 
-    # Now get the tasks
-    response = await client.get("/tasks/?offset=0&limit=100")
+    # Теперь получаем список задач с пагинацией
+    response = await client.get("/tasks/?offset=0&limit=3")
 
-    # Check the response
+    # Проверяем ответ с пагинацией
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) == 3
 
+    # Получаем следующий набор задач
+    response_next = await client.get("/tasks/?offset=3&limit=3")
+
+    # Проверяем ответ следующей страницы
+    assert response_next.status_code == 200
+    data_next = response_next.json()
+    assert isinstance(data_next, list)
+    assert len(data_next) == 2
+
+
 
 @pytest.mark.asyncio
 async def test_delete_task(client: AsyncClient):
-    # First create a task to delete
+    """
+    Удаление задачи через API
+    """
+
+    # Сначала создаем задачу для удаления
     response = await create_task_function(client)
     task_id = response.json()["id"]
 
-    # Delete the task
+    # Удаляем задачу
     delete_response = await client.request(method="DELETE", url=f"/tasks/{task_id}")
+
+    # Проверяем ответ
     assert delete_response.status_code == 204
 
-    # Verify the task is deleted
+    # Проверяем, что задача удалена
+    deleted_response = await client.get(f"/tasks/{task_id}")
+    assert deleted_response.status_code == 404
     get_response = await client.get("/tasks/?offset=0&limit=100")
     assert get_response.status_code == 200
     tasks = get_response.json()
@@ -80,11 +118,15 @@ async def test_delete_task(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_update_task(client: AsyncClient):
-    # First create a task to update
+    """
+    Обновление задачи через API
+    """
+
+    # Сначала создаем задачу для обновления
     response = await create_task_function(client)
     task_id = response.json()["id"]
 
-    # Update the task
+    # Обновляем задачу
     update_response = await client.put(
         f"/tasks/{task_id}/update",
         json={
@@ -93,11 +135,14 @@ async def test_update_task(client: AsyncClient):
             "status": "IN_PROGRESS",
         },
     )
+
+    # Проверяем ответ
     assert update_response.status_code == 200
     updated_task = update_response.json()
     assert updated_task["name"] == "Updated Task"
     assert updated_task["status"] == "IN_PROGRESS"
 
+    # Проверяем, что задача действительно обновлена
     get_response = await client.get(f"/tasks/{task_id}")
     assert get_response.status_code == 200
     data = get_response.json()
@@ -108,52 +153,133 @@ async def test_update_task(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_update_task_status_done(client: AsyncClient):
-    # First create a task to update
+    """
+    Обновление статуса задачи в Done через API
+    Проверяем именно Done чтобы убедиться, что closed_at устанавливается
+    """
+
+    # Сначала создаем задачу для обновления
     response = await create_task_function(client)
     task_id = response.json()["id"]
 
-    # Update the task status
+    # Обновляем статус задачи
     update_response = await client.patch(
         "/tasks/status", json={"id": task_id, "status": "DONE"}
     )
+
+    # Проверяем ответ
     assert update_response.status_code == 200
     updated_task = update_response.json()
     assert updated_task["status"] == "DONE"
 
+    # Проверяем, что статус задачи действительно обновлен
     get_response = await client.get(f"/tasks/{task_id}")
     assert get_response.status_code == 200
     data = get_response.json()
     assert data["id"] == task_id
     assert data["status"] == "DONE"
-    assert (
-        data["closed_at"] is not None
-    )  # Assuming closed_at is set when status is DONE
+
+    # Проверяем, что время закрытия задачи установлено
+    assert data["closed_at"] is not None
+
+    # TODO можно добавить проверку, что closed_at близко к текущему времени
 
 
 @pytest.mark.asyncio
 async def test_update_task_status_in_progress(client: AsyncClient):
-    # First create a task to update
+    """
+    Обновление статуса задачи в In Progress через API
+    """
+
+    # Сначала создаем задачу для обновления
     response = await create_task_function(client)
     task_id = response.json()["id"]
 
-    # Update the task status
+    # Обновляем статус задачи
     update_response = await client.patch(
         "/tasks/status", json={"id": task_id, "status": "IN_PROGRESS"}
     )
+
+    # Проверяем ответ
     assert update_response.status_code == 200
     updated_task = update_response.json()
     assert updated_task["status"] == "IN_PROGRESS"
 
+    # Проверяем, что статус задачи действительно обновлен
     get_response = await client.get(f"/tasks/{task_id}")
     assert get_response.status_code == 200
     data = get_response.json()
     assert data["id"] == task_id
     assert data["status"] == "IN_PROGRESS"
+
+    # Проверяем, что время закрытия задачи сброшено
+    assert data["closed_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_task_wrong_status(client: AsyncClient):
+    """
+    Обновление статуса задачи с неверным значением через API
+    """
+    # Сначала создаем задачу для обновления
+    response = await create_task_function(client)
+    task_id = response.json()["id"]
+
+    # Пытаемся обновить статус задачи на неверное значение
+    update_response = await client.patch(
+        "/tasks/status", json={"id": task_id, "status": "INVALID_STATUS"}
+    )
+
+    # Проверяем ответ
+    assert update_response.status_code == 400
+    assert update_response.json()["detail"] == "Invalid status"
+
+    # Проверяем, что статус задачи не изменился
+    get_response = await client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    data = get_response.json()
+    assert data["id"] == task_id
+    assert data["status"] == "TODO"
+
+
+@pytest.mark.asyncio
+async def test_update_task_status_resets_closed_at(client: AsyncClient):
+    """
+    Обновление статуса задачи из DONE в TODO сбрасывает closed_at
+    """
+
+    # Сначала создаем задачу для обновления
+    response = await create_task_function(client)
+    task_id = response.json()["id"]
+
+    # Меняем статус на DONE
+    done_response = await client.patch(
+        "/tasks/status", json={"id": task_id, "status": "DONE"}
+    )
+
+    # Проверяем ответ и closed_at
+    assert done_response.status_code == 200
+    assert done_response.json()["closed_at"] is not None
+
+    # Теперь меняем статус обратно на TODO
+    reset_response = await client.patch(
+        "/tasks/status", json={"id": task_id, "status": "TODO"}
+    )
+
+    # Проверяем ответ и closed_at
+    assert reset_response.status_code == 200
+    data = reset_response.json()
+    assert data["status"] == "TODO"
     assert data["closed_at"] is None
 
 
 @pytest.mark.asyncio
 async def test_get_task_children(client: AsyncClient):
+    """
+    Получение цепочки задач через API
+    """
+
+    # Создаем задачи через API
     tasks_data = [
         {
             "name": "Parent Task",
@@ -176,8 +302,10 @@ async def test_get_task_children(client: AsyncClient):
     for task_data in tasks_data:
         await create_task_function(client, task_data)
 
-    # Get the task chain for the parent task
+    # Получаем цепочку задач для родительской задачи
     response = await client.get("/tasks/1/children/")
+
+    # Проверяем ответ
     assert response.status_code == 200
     response_data = response.json()
     assert len(response_data) == 2
@@ -187,6 +315,10 @@ async def test_get_task_children(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
+    """
+    Тест создания цепочки задач через Celery задачу
+    """
+
     # Создаем задачи через API
     tasks_data = [
         {
@@ -224,17 +356,21 @@ async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch):
     result = build_task_chain.delay(created_tasks[0]["id"])
     chain = result.get(timeout=10)
 
+    # Проверяем структуру цепочки
     assert chain["id"] == created_tasks[0]["id"]  # Используем реальный ID из ответа
     assert len(chain["children"]) == 2
 
 
 def test_build_chain_with_direct_db(db_session, monkeypatch):
+    """
+    Тест создания цепочки задач через прямой доступ к БД
+    """
     from app.crud import chains
 
     # 👇 monkeypatch локально
     monkeypatch.setattr(chains, "get_sync_session", lambda: db_session)
 
-    # Дальше всё как раньше
+    # Создаем задачи напрямую в БД
     parent = Task(
         name="Parent Task",
         description="Parent",
@@ -266,13 +402,12 @@ def test_build_chain_with_direct_db(db_session, monkeypatch):
         owner_uid="test_user_123",
         parent_id=2,
     )
-
     db_session.add_all([parent, child1, child2, grandchild])
     db_session.commit()
-
     result = build_task_chain.apply((parent.id,), throw=True)
     chain = result.get()
 
+    # Проверяем структуру цепочки
     assert chain["name"] == "Parent Task"
     assert len(chain["children"]) == 2
     assert any(c["name"] == "Child Task 1" for c in chain["children"])
@@ -281,39 +416,30 @@ def test_build_chain_with_direct_db(db_session, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_task_by_id_not_found(client: AsyncClient):
+    """
+    Получение несуществующей задачи по ID через API
+    """
+
+    # Пытаемся получить задачу с несуществующим ID
     response = await client.get("/tasks/9999")
+
+    # Проверяем ответ
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_update_task_status_resets_closed_at(client: AsyncClient):
-    response = await create_task_function(client)
-    task_id = response.json()["id"]
-
-    done_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "DONE"}
-    )
-    assert done_response.status_code == 200
-    assert done_response.json()["closed_at"] is not None
-
-    reset_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "TODO"}
-    )
-    assert reset_response.status_code == 200
-    data = reset_response.json()
-    assert data["status"] == "TODO"
-    assert data["closed_at"] is None
-
-
-@pytest.mark.asyncio
 async def test_get_tasks_today(client: AsyncClient):
-    # Create tasks with different planned_at dates
+    """
+    Получение задач, запланированных на сегодня, через API
+    """
     from datetime import datetime, timedelta
 
+    # Определяем даты
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
 
+    # Создаем задачи с разными датами planned_at
     tasks_data = [
         {
             "name": "Task Today 1",
@@ -340,30 +466,42 @@ async def test_get_tasks_today(client: AsyncClient):
             "planned_at": tomorrow.isoformat(),
         },
     ]
-
     for task_data in tasks_data:
         await create_task_function(client, task_data)
 
-    # Now get today's tasks
+    # Получаем задачи, запланированные на сегодня
     response = await client.get("/tasks/today")
+
+    # Проверяем ответ
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 2  # Only the two tasks planned for today
+
+    # Проверяем количество задач
+    assert len(data) == 2
     task_names = [task["name"] for task in data]
+
+    # Проверяем имена задач
     assert "Task Today 1" in task_names
     assert "Task Today 2" in task_names
+    assert "Task Yesterday" not in task_names
+    assert "Task Tomorrow" not in task_names
 
 
 @pytest.mark.asyncio
 async def test_get_tasks_later(client: AsyncClient):
-    # Create tasks with different planned_at dates
+    """
+    Получение задач, запланированных на позже, через API
+    """
+
     from datetime import datetime, timedelta
 
+    # Определяем даты
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     day_after_tomorrow = today + timedelta(days=2)
 
+    # Создаем задачи с разными датами planned_at
     tasks_data = [
         {
             "name": "Task Tomorrow",
@@ -384,16 +522,21 @@ async def test_get_tasks_later(client: AsyncClient):
             "planned_at": today.isoformat(),
         },
     ]
-
     for task_data in tasks_data:
         await create_task_function(client, task_data)
 
-    # Now get later tasks
+    # Получаем задачи, запланированные на позже
     response = await client.get("/tasks/later")
+
+    # Проверяем ответ
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 2  # Only the two tasks planned for later
+
+    # Проверяем количество задач
+    assert len(data) == 2
     task_names = [task["name"] for task in data]
+
+    # Проверяем имена задач
     assert "Task Tomorrow" in task_names
     assert "Task Day After Tomorrow" in task_names

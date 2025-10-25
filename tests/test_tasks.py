@@ -625,12 +625,8 @@ async def test_get_tasks_without_user_session(unauthenticated_client: AsyncClien
     """
     Проверка получения задач без активной сессии пользователя через API
     """
-    # Используем базовый URL из твоей фикстуры client
-    base_url = str(unauthenticated_client.base_url)
 
-    # Используем тот же самый 'client', но явно указываем,
-    # что для этого запроса не нужны никакие заголовки.
-    # Это переопределит любые заголовки по умолчанию, включая 'Authorization'.
+    # Пытаемся получить задачи без аутентификации
     response = await unauthenticated_client.get("/tasks/")
 
     # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
@@ -645,8 +641,6 @@ async def test_create_task_without_user_session(
     """
     Проверка создания задачи без активной сессии пользователя через API
     """
-    # Используем базовый URL из твоей фикстуры client
-    base_url = str(unauthenticated_client.base_url)
 
     # Пытаемся создать задачу без аутентификации
     response = await unauthenticated_client.post(

@@ -14,6 +14,7 @@ async def test_create_task(client: AsyncClient, create_task_factory):
     """
     Проверка создания задачи через API
     """
+
     # Создаем задачу
     response = await create_task_factory()
 
@@ -21,6 +22,24 @@ async def test_create_task(client: AsyncClient, create_task_factory):
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test Task"
+
+
+@pytest.mark.asyncio
+async def test_create_task_without_name(client: AsyncClient, create_task_factory):
+    """
+    Проверка создания задачи без имени через API
+    """
+
+    # Пытаемся создать задачу без имени
+    response = await create_task_factory(
+        {
+            "description": "Task without a name",
+            "status": "TODO",
+        }
+    )
+
+    # Проверяем ответ
+    assert response.status_code == 422  # Ожидаем ошибку валидации
 
 
 @pytest.mark.asyncio
@@ -73,7 +92,6 @@ async def test_get_tasks(client: AsyncClient, create_task_factory):
     data_next = response_next.json()
     assert isinstance(data_next, list)
     assert len(data_next) == 2
-
 
 
 @pytest.mark.asyncio
@@ -227,7 +245,9 @@ async def test_update_task_wrong_status(client: AsyncClient, create_task_factory
 
 
 @pytest.mark.asyncio
-async def test_update_task_status_resets_closed_at(client: AsyncClient, create_task_factory):
+async def test_update_task_status_resets_closed_at(
+    client: AsyncClient, create_task_factory
+):
     """
     Обновление статуса задачи из DONE в TODO сбрасывает closed_at
     """
@@ -298,7 +318,9 @@ async def test_get_task_children(client: AsyncClient, create_task_factory):
 
 
 @pytest.mark.asyncio
-async def test_create_task_chain(client: AsyncClient, db_session, monkeypatch, create_task_factory):
+async def test_create_task_chain(
+    client: AsyncClient, db_session, monkeypatch, create_task_factory
+):
     """
     Тест создания цепочки задач через Celery задачу
     """
@@ -527,7 +549,9 @@ async def test_get_tasks_later(client: AsyncClient, create_task_factory):
 
 
 @pytest.mark.asyncio
-async def test_task_create_with_invalid_project_id(client: AsyncClient, create_task_factory):
+async def test_task_create_with_invalid_project_id(
+    client: AsyncClient, create_task_factory
+):
     """
     Проверка создания задачи с несуществующим project_id через API
     """
@@ -545,8 +569,11 @@ async def test_task_create_with_invalid_project_id(client: AsyncClient, create_t
     # Проверяем ответ
     assert response.status_code == 400
 
+
 @pytest.mark.asyncio
-async def test_task_create_with_both_project_params(client: AsyncClient, create_task_factory):
+async def test_task_create_with_both_project_params(
+    client: AsyncClient, create_task_factory
+):
     """
     Проверка создания задачи с обоими параметрами project_id и project_name через API
     """
@@ -565,8 +592,11 @@ async def test_task_create_with_both_project_params(client: AsyncClient, create_
     # Проверяем ответ
     assert response.status_code == 400
 
+
 @pytest.mark.asyncio
-async def test_update_task_with_invalid_project_id(client: AsyncClient, create_task_factory):
+async def test_update_task_with_invalid_project_id(
+    client: AsyncClient, create_task_factory
+):
     """
     Проверка обновления задачи с несуществующим project_id через API
     """
@@ -588,3 +618,45 @@ async def test_update_task_with_invalid_project_id(client: AsyncClient, create_t
 
     # Проверяем ответ
     assert update_response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_without_user_session(unauthenticated_client: AsyncClient):
+    """
+    Проверка получения задач без активной сессии пользователя через API
+    """
+    # Используем базовый URL из твоей фикстуры client
+    base_url = str(unauthenticated_client.base_url)
+
+    # Используем тот же самый 'client', но явно указываем,
+    # что для этого запроса не нужны никакие заголовки.
+    # Это переопределит любые заголовки по умолчанию, включая 'Authorization'.
+    response = await unauthenticated_client.get("/tasks/")
+
+    # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authenticated"
+
+@pytest.mark.asyncio
+async def test_create_task_without_user_session(
+    unauthenticated_client: AsyncClient,
+):
+    """
+    Проверка создания задачи без активной сессии пользователя через API
+    """
+    # Используем базовый URL из твоей фикстуры client
+    base_url = str(unauthenticated_client.base_url)
+
+    # Пытаемся создать задачу без аутентификации
+    response = await unauthenticated_client.post(
+        "/tasks/",
+        json={
+            "name": "Task without User Session",
+            "description": "Trying to create a task without user session",
+            "status": "TODO",
+        },
+    )
+
+    # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authenticated"

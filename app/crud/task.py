@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from datetime import datetime
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +21,19 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
     project_name = task.project_name
     project = None
 
+    if project_id and project_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either project_id or project_name, not both.",
+        )
+
     if project_id:
         project = await get_project_by_id(db, project_id, user_uid)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Project {project_id} not found, cannot assign task to it.",
+            )
 
     if project_name:
         project = await get_project_by_name(db, project_name, user_uid)
@@ -110,7 +122,17 @@ async def update_task(
         if isinstance(task_data.status, TaskStatus)
         else task_data.status
     )
-    task.project_id = task_data.project_id
+
+    if task_data.project_id is not None:
+        project = await get_project_by_id(db, task_data.project_id, user_uid)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Project {task_data.project_id} not found, cannot assign task to it.",
+            )
+        else:
+            task.project_id = project.id
+
     task.parent_id = task_data.parent_id
     await db.commit()
     await db.refresh(task)

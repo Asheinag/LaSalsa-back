@@ -637,6 +637,7 @@ async def test_get_tasks_without_user_session(unauthenticated_client: AsyncClien
     assert response.status_code == 403
     assert response.json()["detail"] == "Not authenticated"
 
+
 @pytest.mark.asyncio
 async def test_create_task_without_user_session(
     unauthenticated_client: AsyncClient,
@@ -660,3 +661,32 @@ async def test_create_task_without_user_session(
     # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
     assert response.status_code == 403
     assert response.json()["detail"] == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_get_another_user_task(
+    client: AsyncClient,
+    db_session,
+):
+    """
+    Проверка получения задачи другого пользователя через API
+    """
+
+    # Создаем задачу от имени другого пользователя напрямую в БД
+    from app.models.task import Task
+
+    another_user_task = Task(
+        name="Another User Task",
+        description="Task owned by another user",
+        status="TODO",
+        created_at=datetime.now(),
+        owner_uid="another_user_456",
+    )
+    db_session.add(another_user_task)
+    db_session.commit()
+
+    # Пытаемся получить эту задачу через API
+    response = await client.get(f"/tasks/{another_user_task.id}")
+
+    # Проверяем, что доступ запрещен
+    assert response.status_code == 404

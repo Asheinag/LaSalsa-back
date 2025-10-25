@@ -71,7 +71,6 @@ async def client():
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
-
     # Очищаем переопределения после теста, чтобы не влиять на другие
     del app.dependency_overrides[get_async_session]
     del app.dependency_overrides[verify_firebase_token]

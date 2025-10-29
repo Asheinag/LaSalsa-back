@@ -17,7 +17,7 @@ from app.crud import (
 )
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
-from app.schemas import TaskCreate, TaskRead, TaskShort, TaskStatusUpdate, TaskUpdate
+from app.schemas import TaskCreate, TaskRead, TaskShort, TaskUpdate
 
 # Определяем роутер для задач
 router = APIRouter(prefix="/tasks", tags=["tasks"])

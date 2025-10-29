@@ -189,9 +189,7 @@ async def test_update_task_status_done(client: AsyncClient, create_task_factory)
     task_id = response.json()["id"]
 
     # Обновляем статус задачи
-    update_response = await client.patch(
-        f"/tasks/{task_id}", json={"status": "DONE"}
-    )
+    update_response = await client.patch(f"/tasks/{task_id}", json={"status": "DONE"})
 
     # Проверяем ответ
     assert update_response.status_code == 200
@@ -280,18 +278,14 @@ async def test_update_task_status_resets_closed_at(
     task_id = response.json()["id"]
 
     # Меняем статус на DONE
-    done_response = await client.patch(
-        f"/tasks/{task_id}", json={"status": "DONE"}
-    )
+    done_response = await client.patch(f"/tasks/{task_id}", json={"status": "DONE"})
 
     # Проверяем ответ и closed_at
     assert done_response.status_code == 200
     assert done_response.json()["closed_at"] is not None
 
     # Теперь меняем статус обратно на TODO
-    reset_response = await client.patch(
-        f"/tasks/{task_id}", json={"status": "TODO"}
-    )
+    reset_response = await client.patch(f"/tasks/{task_id}", json={"status": "TODO"})
 
     # Проверяем ответ и closed_at
     assert reset_response.status_code == 200

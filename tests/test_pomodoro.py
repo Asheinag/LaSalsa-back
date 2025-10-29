@@ -96,7 +96,7 @@ async def test_create_pomodoro_custom_duration(
 
 @pytest.mark.asyncio
 async def test_create_pomodoro_without_user_session(
-    unauthenticated_client: AsyncClient
+    unauthenticated_client: AsyncClient,
 ):
     """
     Проверка создания сеанса Помодоро без пользовательской сессии через API.
@@ -134,7 +134,9 @@ async def test_get_pomodoro(client: AsyncClient, create_pomodoro_factory):
 
 
 @pytest.mark.asyncio
-async def test_get_pomodoro_tasks(client: AsyncClient, create_pomodoro_factory, create_task_factory):
+async def test_get_pomodoro_tasks(
+    client: AsyncClient, create_pomodoro_factory, create_task_factory
+):
     """
     Проверка получения задач, связанных с сеансом Помодоро через API.
     """
@@ -154,15 +156,9 @@ async def test_get_pomodoro_tasks(client: AsyncClient, create_pomodoro_factory, 
     task2_id = task2_response.json()["id"]
 
     # Обновляем задачи, чтобы связать их с сеансом Помодоро
-    await client.patch(
-        f"/tasks/{task1_id}",
-        json={"pomodoro_id": pomodoro_id}
-    )
+    await client.patch(f"/tasks/{task1_id}", json={"pomodoro_id": pomodoro_id})
 
-    await client.patch(
-        f"/tasks/{task2_id}",
-        json={"pomodoro_id": pomodoro_id}
-    )
+    await client.patch(f"/tasks/{task2_id}", json={"pomodoro_id": pomodoro_id})
     # Получаем задачи, связанные с сеансом Помодоро
     response = await client.get(f"/pomodoros/{pomodoro_id}/tasks")
     print(response.json())

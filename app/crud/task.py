@@ -174,6 +174,7 @@ async def _update_task_simple_fields(task: Task, task_data: TaskUpdate) -> None:
     if task_data.closed_at is not None:
         task.closed_at = task_data.closed_at
 
+
 async def _update_task_complex_fields(
     db: AsyncSession, task: Task, task_data: TaskUpdate, user_uid: str
 ) -> None:
@@ -205,6 +206,7 @@ async def _update_task_complex_fields(
             )
         task.parent_id = parent_task.id
 
+
 async def _update_task_status(
     db: AsyncSession, task_id: int, status: TaskStatus, user_uid: str
 ) -> Task | None:
@@ -222,6 +224,7 @@ async def _update_task_status(
     await db.refresh(task)
     return task
 
+
 async def update_task(
     db: AsyncSession, task_id: int, task_data: TaskUpdate, user_uid: str
 ) -> Task | None:
@@ -236,7 +239,6 @@ async def update_task(
     await db.commit()
     await db.refresh(task)
     return task
-
 
 
 async def get_tasks_by_project_id(

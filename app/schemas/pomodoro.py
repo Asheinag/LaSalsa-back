@@ -1,0 +1,43 @@
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+# Схема Помодоро для создания нового сеанса работы
+class PomodoroCreate(BaseModel):
+    note: Optional[str] = Field(
+        None, title="Note", description="Optional note for the Pomodoro session"
+    )
+    duration_minutes: int = Field(
+        25,
+        title="Duration Minutes",
+        description="Duration of the Pomodoro session in minutes",
+    )
+    previous_pomodoro_id: Optional[int] = Field(
+        None,
+        title="Previous Pomodoro ID",
+        description="ID of the previous Pomodoro session",
+    )
+
+
+# Схема Помодоро для чтения сеанса работы
+class PomodoroRead(BaseModel):
+    id: int = Field(
+        ..., title="ID", description="Unique identifier for the Pomodoro session"
+    )
+    note: Optional[str] = Field(
+        None, title="Note", description="Optional note for the Pomodoro session"
+    )
+    duration_minutes: int = Field(
+        ...,
+        title="Duration Minutes",
+        description="Duration of the Pomodoro session in minutes",
+    )
+    owner_uid: str = Field(
+        ..., title="Owner UID", description="Unique identifier for the Pomodoro owner"
+    )
+    previous_pomodoro_id: Optional[int] = Field(
+        None,
+        title="Previous Pomodoro ID",
+        description="ID of the previous Pomodoro session",
+    )

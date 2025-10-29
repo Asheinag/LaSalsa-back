@@ -7,18 +7,19 @@ from app.crud import (
     build_task_chain,
     create_task,
     delete_task,
+    full_update_task,
     get_task_by_id,
     get_task_children,
     get_tasks_by_offset,
     get_tasks_later,
     get_tasks_today,
     update_task,
-    update_task_status,
 )
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
-from app.schemas import TaskCreate, TaskRead, TaskShort, TaskStatusUpdate
+from app.schemas import TaskCreate, TaskRead, TaskShort, TaskStatusUpdate, TaskUpdate
 
+# Определяем роутер для задач
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
@@ -29,7 +30,7 @@ async def create_task_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Create a new task.
+    СОздание новой задачи
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -46,7 +47,7 @@ async def get_tasks_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Get tasks with pagination.
+    Получение списка задач с пагинацией
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -63,7 +64,7 @@ async def get_tasks_today_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Get tasks due today.
+    Получение задач на сегодня с пагинацией
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -80,7 +81,7 @@ async def get_tasks_later_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Get tasks planned for later.
+    Получение задач на потом с пагинацией
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -96,7 +97,7 @@ async def get_task_by_id_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Get a task by ID.
+    Получение задачи по ID
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -115,7 +116,7 @@ async def delete_task_endpoint(
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Delete a task by ID.
+    Удаление задачи по ID
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -129,7 +130,7 @@ async def delete_task_endpoint(
     return Response(status_code=204)
 
 
-@router.put("/{task_id}/update", response_model=TaskRead)
+@router.put("/{task_id}", response_model=TaskRead)
 async def update_task_endpoint(
     task_id: int,
     task_data: TaskCreate,
@@ -143,26 +144,28 @@ async def update_task_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_uid = user.get("uid")
-    task = await update_task(db, task_id, task_data, user_uid)
+    task = await full_update_task(db, task_id, task_data, user_uid)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
 
-@router.patch("/status", response_model=TaskRead)
-async def update_task_status_endpoint(
-    task_status: TaskStatusUpdate,
+@router.patch("/{task_id}", response_model=TaskRead)
+async def update_tasks_field_endpoint(
+    task_id: int,
+    task_data: TaskUpdate,
     db: AsyncSession = Depends(get_async_session),
     user=Depends(verify_firebase_token),  # noqa: B008
 ):
     """
-    Update the status of a task by ID.
+    Update specific fields of a task by ID.
     """
+
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_uid = user.get("uid")
-    task = await update_task_status(db, task_status.id, task_status.status, user_uid)
+    task = await update_task(db, task_id, task_data, user_uid)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task

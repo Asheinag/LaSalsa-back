@@ -207,3 +207,22 @@ def create_task_factory(client: AsyncClient) -> Callable[..., Coroutine]:
         return await client.post("/tasks/", json=task_data)
 
     return _create_task
+
+
+@pytest.fixture
+def create_pomodoro_factory(client: AsyncClient) -> Callable[..., Coroutine]:
+    """
+    Фикстура-фабрика для создания сеанса Помодоро.
+    Возвращает саму асинхронную функцию.
+    """
+
+    # Функция для создания сеанса Помодоро
+    async def _create_pomodoro(pomodoro_data=None):
+        if pomodoro_data is None:
+            pomodoro_data = {
+                "note": "Test Pomodoro",
+                "duration_minutes": 25,
+            }
+        return await client.post("/pomodoros/", json=pomodoro_data)
+
+    return _create_pomodoro

@@ -43,6 +43,29 @@ async def test_create_task_without_name(client: AsyncClient, create_task_factory
 
 
 @pytest.mark.asyncio
+async def test_create_task_without_user_session(
+    unauthenticated_client: AsyncClient,
+):
+    """
+    Проверка создания задачи без активной сессии пользователя через API
+    """
+
+    # Пытаемся создать задачу без аутентификации
+    response = await unauthenticated_client.post(
+        "/tasks/",
+        json={
+            "name": "Task without User Session",
+            "description": "Trying to create a task without user session",
+            "status": "TODO",
+        },
+    )
+
+    # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authenticated"
+
+
+@pytest.mark.asyncio
 async def test_get_task_by_id(client: AsyncClient, create_task_factory):
     """
     Получение задачи по ID через API
@@ -131,7 +154,7 @@ async def test_update_task(client: AsyncClient, create_task_factory):
 
     # Обновляем задачу
     update_response = await client.put(
-        f"/tasks/{task_id}/update",
+        f"/tasks/{task_id}",
         json={
             "name": "Updated Task",
             "description": "Updated via test",
@@ -167,7 +190,7 @@ async def test_update_task_status_done(client: AsyncClient, create_task_factory)
 
     # Обновляем статус задачи
     update_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "DONE"}
+        f"/tasks/{task_id}", json={"status": "DONE"}
     )
 
     # Проверяем ответ
@@ -200,7 +223,7 @@ async def test_update_task_status_in_progress(client: AsyncClient, create_task_f
 
     # Обновляем статус задачи
     update_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "IN_PROGRESS"}
+        f"/tasks/{task_id}", json={"status": "IN_PROGRESS"}
     )
 
     # Проверяем ответ
@@ -230,7 +253,7 @@ async def test_update_task_wrong_status(client: AsyncClient, create_task_factory
 
     # Пытаемся обновить статус задачи на неверное значение
     update_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "INVALID_STATUS"}
+        f"/tasks/{task_id}", json={"status": "WRONG_STATUS"}
     )
 
     # Проверяем ответ
@@ -258,7 +281,7 @@ async def test_update_task_status_resets_closed_at(
 
     # Меняем статус на DONE
     done_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "DONE"}
+        f"/tasks/{task_id}", json={"status": "DONE"}
     )
 
     # Проверяем ответ и closed_at
@@ -267,7 +290,7 @@ async def test_update_task_status_resets_closed_at(
 
     # Теперь меняем статус обратно на TODO
     reset_response = await client.patch(
-        "/tasks/status", json={"id": task_id, "status": "TODO"}
+        f"/tasks/{task_id}", json={"status": "TODO"}
     )
 
     # Проверяем ответ и closed_at
@@ -607,7 +630,7 @@ async def test_update_task_with_invalid_project_id(
 
     # Пытаемся обновить задачу с несуществующим project_id
     update_response = await client.put(
-        f"/tasks/{task_id}/update",
+        f"/tasks/{task_id}",
         json={
             "name": "Updated Task with Invalid Project",
             "description": "Trying to update with invalid project_id",
@@ -628,29 +651,6 @@ async def test_get_tasks_without_user_session(unauthenticated_client: AsyncClien
 
     # Пытаемся получить задачи без аутентификации
     response = await unauthenticated_client.get("/tasks/")
-
-    # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Not authenticated"
-
-
-@pytest.mark.asyncio
-async def test_create_task_without_user_session(
-    unauthenticated_client: AsyncClient,
-):
-    """
-    Проверка создания задачи без активной сессии пользователя через API
-    """
-
-    # Пытаемся создать задачу без аутентификации
-    response = await unauthenticated_client.post(
-        "/tasks/",
-        json={
-            "name": "Task without User Session",
-            "description": "Trying to create a task without user session",
-            "status": "TODO",
-        },
-    )
 
     # Проверяем, что FastAPI вернул стандартную ошибку "Не аутентифицирован"
     assert response.status_code == 403
@@ -684,3 +684,42 @@ async def test_get_another_user_task(
 
     # Проверяем, что доступ запрещен
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_link_pomodoro_to_task(
+    client: AsyncClient,
+    create_task_factory,
+    create_pomodoro_factory,
+):
+    """
+    Проверка связывания сеанса Помодоро с задачей через API
+    """
+
+    # Сначала создаем задачу
+    task_response = await create_task_factory()
+    task_id = task_response.json()["id"]
+
+    # Затем создаем сеанс Помодоро, связанный с этой задачей
+    pomodoro_response = await create_pomodoro_factory(
+        {
+            "note": "Pomodoro linked to task",
+            "duration_minutes": 25,
+            "owner_uid": "test_user_123",
+        }
+    )
+    assert pomodoro_response.status_code == 201
+    pomodoro_data = pomodoro_response.json()
+
+    # Добавляем связь между Помодоро и задачей
+    pomodoro_id = pomodoro_data["id"]
+    link_response = await client.patch(
+        f"/tasks/{task_id}", json={"pomodoro_id": pomodoro_id}
+    )
+    assert link_response.status_code == 200
+
+    # Проверяем, что задача теперь связана с сеансом Помодоро
+    get_response = await client.get(f"/tasks/{task_id}")
+    assert get_response.status_code == 200
+    task_data = get_response.json()
+    assert task_data["pomodoro_id"] == pomodoro_id

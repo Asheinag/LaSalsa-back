@@ -36,6 +36,11 @@ class TaskBase(BaseModel):
         title="Parent Task ID",
         description="ID of the parent task if this is a subtask",
     )
+    pomodoro_id: Optional[int] = Field(
+        None,
+        title="Pomodoro ID",
+        description="ID of the pomodoro associated with the task",
+    )
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -89,4 +94,36 @@ class TaskStatusUpdate(BaseModel):
 class TaskID(BaseModel):
     id: int = Field(..., title="Task ID", description="Unique identifier for the task")
 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TaskUpdate(BaseModel):
+    name: Optional[str] = Field(None, title="Task Name", description="Name of the task")
+    description: Optional[str] = Field(
+        None, title="Task Description", description="Description of the task"
+    )
+    planned_at: Optional[datetime] = Field(
+        None, title="Planned At", description="Planned date and time for the task"
+    )
+    closed_at: Optional[datetime] = Field(
+        None, title="Closed At", description="Closed date and time for the task"
+    )
+    status: Optional[TaskStatus] = Field(
+        None, title="Task Status", description="Current status of the task"
+    )
+    project_id: Optional[int] = Field(
+        None,
+        title="Project ID",
+        description="ID of the project associated with the task",
+    )
+    parent_id: Optional[int] = Field(
+        None,
+        title="Parent Task ID",
+        description="ID of the parent task if this is a subtask",
+    )
+    pomodoro_id: Optional[int] = Field(
+        None,
+        title="Pomodoro ID",
+        description="ID of the pomodoro associated with the task",
+    )
     model_config = ConfigDict(from_attributes=True)

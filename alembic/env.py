@@ -13,7 +13,7 @@ from app.models import *  # noqa: F403
 env_file = os.environ.get(
     "ENV_FILE", ".env.dev"
 )  # например, передаётся через окружение
-load_dotenv(dotenv_path=env_file, override=True)
+load_dotenv(dotenv_path=env_file, override=False)
 
 config = context.config
 # Load environment variables from the config

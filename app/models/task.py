@@ -30,3 +30,6 @@ class Task(Base):
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tasks.id"), nullable=True
     )
+    pomodoro_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("pomodoros.id"), nullable=True
+    )

@@ -1,6 +1,13 @@
 import types
 
 from .chains import build_task_chain, collect_chain  # noqa: F401
+from .pomodoro import (  # noqa: F401
+    create_pomodoro,
+    delete_pomodoro,
+    get_pomodoro,
+    get_pomodoro_tasks,
+    validate_owner,
+)
 from .project import (  # noqa: F401
     create_project,
     get_project_by_id,
@@ -10,6 +17,7 @@ from .project import (  # noqa: F401
 from .task import (  # noqa: F401
     create_task,
     delete_task,
+    full_update_task,
     get_task_by_id,
     get_task_children,
     get_tasks_by_offset,
@@ -17,7 +25,6 @@ from .task import (  # noqa: F401
     get_tasks_later,
     get_tasks_today,
     update_task,
-    update_task_status,
 )
 
 __all__ = [

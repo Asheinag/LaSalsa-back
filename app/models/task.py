@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -32,4 +32,7 @@ class Task(Base):
     )
     pomodoro_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("pomodoros.id"), nullable=True
+    )
+    ai_comments: relationship(
+        "ProjectAIComment", back_populates="project", cascade="all, delete-orphan"
     )

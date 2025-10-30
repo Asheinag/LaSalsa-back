@@ -53,7 +53,23 @@ async def get_tasks_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_uid = user.get("uid")
-    return await get_tasks_by_offset(db, user_uid, offset, limit)
+    return await get_tasks_by_offset(db, user_uid, offset, limit, active_only=False)
+
+@router.get("/active", response_model=list[TaskShort])
+async def get_active_tasks_endpoint(
+    offset: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),  # noqa: B008
+):
+    """
+    Получение активных задач с пагинацией
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    user_uid = user.get("uid")
+    return await get_tasks_by_offset(db, user_uid, offset, limit, active_only=True)
 
 
 @router.get("/today", response_model=list[TaskShort])

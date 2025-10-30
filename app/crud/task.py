@@ -76,14 +76,27 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
 
 
 async def get_tasks_by_offset(
-    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
+    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100, active_only: bool = False
 ) -> Sequence[Task]:
     """Retrieve tasks for a user with pagination."""
-    result = await db.execute(
-        select(Task).where(Task.owner_uid == user_uid).offset(offset).limit(limit)
-    )
 
-    return result.scalars().all()
+    if active_only:
+        result = await db.execute(
+            select(Task)
+            .where(
+                Task.owner_uid == user_uid,
+                Task.status != TaskStatus.DONE.value,
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+        return result.scalars().all()
+    else:
+        result = await db.execute(
+            select(Task).where(Task.owner_uid == user_uid).offset(offset).limit(limit)
+        )
+
+        return result.scalars().all()
 
 
 async def get_task_by_id(db: AsyncSession, task_id: int, user_uid: str) -> Task | None:

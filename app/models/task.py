@@ -33,6 +33,4 @@ class Task(Base):
     pomodoro_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("pomodoros.id"), nullable=True
     )
-    ai_comments: relationship(
-        "ProjectAIComment", back_populates="project", cascade="all, delete-orphan"
-    )
+    ai_comments = relationship("TaskAIComment", back_populates="task", cascade="all, delete-orphan")

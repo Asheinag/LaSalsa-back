@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud import get_tasks_by_offset
+from app.crud import get_active_comments_by_task_id, make_ai_tasks_review
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
+from app.schemas import TaskAIComment
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
+
 @router.post("/review-tasks")
-def review_tasks_endpoint(db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token)):
+async def review_tasks_endpoint(
+    db: AsyncSession = Depends(get_async_session), user=Depends(verify_firebase_token)
+):
     """
     Эндпоинт для обзора задач с помощью ИИ
     """
@@ -17,16 +20,40 @@ def review_tasks_endpoint(db: AsyncSession = Depends(get_async_session),
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_uid = user.get("uid")
-    response = get_tasks_by_offset(db, user_uid, 0, 100, active_only=True)
-    task_list = []
-    if not response:
-        raise HTTPException(status_code=404, detail="No tasks found for review")
-    while True:
-        tasks = response.result()
-        if not tasks:
-            break
-        task_list.extend(tasks)
-        offset = len(task_list)
-        response = get_tasks_by_offset(db, user_uid, offset, 100, active_only=True)
+    result = make_ai_tasks_review.delay(user_uid)
+    return {"celery_task_id": result.id, "status": "AI Review started"}
 
-    return Response(content="AI task review endpoint is under construction.", status_code=200)
+
+@router.get("/review-tasks/status/{celery_task_id}")
+async def get_review_tasks_status(
+    celery_task_id: str,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),
+):
+    """
+    Эндпоинт для получения статуса задачи обзора задач с помощью ИИ
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = make_ai_tasks_review.AsyncResult(celery_task_id)
+    if result.state == "PENDING":
+        return {"status": "pending"}
+    elif result.state == "SUCCESS":
+        return {"status": "done", "data": result.result}
+    elif result.state == "FAILURE":
+        return {"status": "error", "reason": str(result.result)}
+    else:
+        return {"status": result.state}
+
+
+@router.get("/review-tasks/{task_id}", response_model=list[TaskAIComment])
+async def get_ai_comment_by_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(verify_firebase_token),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    return await get_active_comments_by_task_id(db, task_id)

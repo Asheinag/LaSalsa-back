@@ -46,7 +46,7 @@ services:
       - DB_PORT=5432
     volumes:
       - .:/app
-    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains", "--pool=solo", "--loglevel=info"]
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains,ai_reviews", "--pool=solo", "--loglevel=info"]
 
   dev-backend:
     build:

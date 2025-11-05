@@ -26,6 +26,10 @@ from .task import (  # noqa: F401
     get_tasks_today,
     update_task,
 )
+from .task_ai_comment import (  # noqa: F401
+    get_active_comments_by_task_id,
+    make_ai_tasks_review,
+)
 
 __all__ = [
     name

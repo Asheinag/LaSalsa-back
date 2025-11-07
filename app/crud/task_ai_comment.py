@@ -46,6 +46,7 @@ def make_ai_tasks_review(user_uid: str):
                     created_at=datetime.now(),
                     task_id=task_id,
                     is_active=True,
+                    owner_uid=user_uid,
                 )
                 session.add(db_comment)
 
@@ -95,18 +96,34 @@ def _get_ai_comments_for_tasks(tasks: Sequence[Task]) -> dict:
     return ai_comments_dict
 
 
-async def get_active_comments_by_task_id(
-    db: AsyncSession, task_id: int
+async def get_active_comment_by_task_id(
+    db: AsyncSession, task_id: int, user_uid: str
+) -> TaskAIComment:
+    """
+    Получаем активный AI комментарий для задачи по её ID.
+    """
+    result = await db.execute(
+        select(TaskAIComment).filter(
+            TaskAIComment.task_id == task_id,
+            TaskAIComment.is_active == True,
+            TaskAIComment.owner_uid == user_uid,  # noqa: E712
+        )
+    )
+    return result.scalars().first()
+    
+
+async def get_all_comments_for_task(
+    db: AsyncSession, task_id: int, user_uid: str
 ) -> Sequence[TaskAIComment]:
     """
-    Получаем все активные AI комментарии для задачи по её ID.
+    Получаем все комментарии по задаче
     """
 
     result = await db.execute(
         select(TaskAIComment).filter(
             TaskAIComment.task_id == task_id,
-            TaskAIComment.is_active == True,  # noqa: E712
+            TaskAIComment.owner_uid == user_uid # noqa: E712 
         )
     )
-    comments = result.scalars().all()
-    return comments
+
+    return result.scalars().all()

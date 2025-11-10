@@ -76,7 +76,11 @@ async def create_task(db: AsyncSession, task: TaskCreate, user_uid: str) -> Task
 
 
 async def get_tasks_by_offset(
-    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100, active_only: bool = False
+    db: AsyncSession,
+    user_uid: str,
+    offset: int = 0,
+    limit: int = 100,
+    active_only: bool = False,
 ) -> Sequence[Task]:
     """Retrieve tasks for a user with pagination."""
 

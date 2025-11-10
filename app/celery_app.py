@@ -20,6 +20,6 @@ celery_app.conf.task_routes = {
 
 # import app.crud  # noqa: E402, F401
 celery_app.conf.include = [
-    'app.crud.task_ai_comment',  # <-- путь к файлу с make_ai_tasks_review
-    'app.crud.chains'  # <-- или как называется файл с build_task_chain
+    "app.crud.task_ai_comment",  # <-- путь к файлу с make_ai_tasks_review
+    "app.crud.chains",  # <-- или как называется файл с build_task_chain
 ]

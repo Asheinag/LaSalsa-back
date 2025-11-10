@@ -10,7 +10,6 @@ from app.celery_app import celery_app
 from app.common import TaskStatus
 from app.database import get_sync_session
 from app.models import Task, TaskAIComment
-from app.schemas import TaskAICommentBase
 
 logger = get_task_logger(__name__)
 
@@ -105,12 +104,12 @@ async def get_active_comment_by_task_id(
     result = await db.execute(
         select(TaskAIComment).filter(
             TaskAIComment.task_id == task_id,
-            TaskAIComment.is_active == True,
+            TaskAIComment.is_active is True,
             TaskAIComment.owner_uid == user_uid,  # noqa: E712
         )
     )
     return result.scalars().first()
-    
+
 
 async def get_all_comments_for_task(
     db: AsyncSession, task_id: int, user_uid: str
@@ -122,7 +121,7 @@ async def get_all_comments_for_task(
     result = await db.execute(
         select(TaskAIComment).filter(
             TaskAIComment.task_id == task_id,
-            TaskAIComment.owner_uid == user_uid # noqa: E712 
+            TaskAIComment.owner_uid == user_uid,  # noqa: E712
         )
     )
 

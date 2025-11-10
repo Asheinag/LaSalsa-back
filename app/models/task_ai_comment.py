@@ -19,4 +19,6 @@ class TaskAIComment(Base):
     )
     task = relationship("Task", back_populates="ai_comments")
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    owner_uid: Mapped[str] = mapped_column(String, nullable=False, index=True, server_default='owner_user_uid')
+    owner_uid: Mapped[str] = mapped_column(
+        String, nullable=False, index=True, server_default="owner_user_uid"
+    )

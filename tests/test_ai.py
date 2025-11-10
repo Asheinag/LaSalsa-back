@@ -124,7 +124,6 @@ async def test_new_review_deactivate_previous(
     get_response = await client.get(f"/ai/review/{first_task_id}/all")
     response_data = get_response.json()
 
-
     # Проверяем результат
     assert len(response_data) > 1
     assert response_data[0]["task_id"] == 1

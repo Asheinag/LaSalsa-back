@@ -55,6 +55,7 @@ async def get_tasks_endpoint(
     user_uid = user.get("uid")
     return await get_tasks_by_offset(db, user_uid, offset, limit, active_only=False)
 
+
 @router.get("/active", response_model=list[TaskShort])
 async def get_active_tasks_endpoint(
     offset: int = 0,

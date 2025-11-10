@@ -101,14 +101,18 @@ async def get_active_comment_by_task_id(
     """
     Получаем активный AI комментарий для задачи по её ID.
     """
+
     result = await db.execute(
         select(TaskAIComment).filter(
             TaskAIComment.task_id == task_id,
-            TaskAIComment.is_active is True,
+            TaskAIComment.is_active,
             TaskAIComment.owner_uid == user_uid,  # noqa: E712
         )
     )
-    return result.scalars().first()
+
+    ret = result.scalars().first()
+    print(f"Итог {ret}")
+    return ret
 
 
 async def get_all_comments_for_task(

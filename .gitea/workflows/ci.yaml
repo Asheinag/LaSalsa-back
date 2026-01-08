@@ -10,59 +10,45 @@ on:
 jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
-    
+    # ВАЖНО: Запускаем шаги внутри контейнера, чтобы работала сеть между сервисами
+    container:
+      image: catthehacker/ubuntu:act-22.04 
+
     services:
-      # Временная база данных
       db-test:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      # Временный Redis для Celery
+        # Для Postgres внутри Docker-сети порты наружу выставлять не обязательно
+      
       redis-test:
         image: redis:7.2
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+        # Внутри контейнера этот флаг может быть критичен
         with:
           set-safe-directory: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13' # Совпадаем с твоим Dockerfile
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Ruff (Linter)
+      - name: Run Ruff
         run: ruff check .
 
       - name: Run Tests
         env:
           CI: "true"
-          # Настройки базы (хост совпадает с именем сервиса)
           DB_HOST: db-test
           DB_PORT: 5432
           DB_USER: postgres
           DB_PASS: postgres
           DB_NAME: test_db
-          # Настройки Redis (хост совпадает с именем сервиса)
           CELERY_BROKER_URL: redis://redis-test:6379/0
           CELERY_RESULT_BACKEND: redis://redis-test:6379/0
         run: |

@@ -10,17 +10,26 @@ on:
 jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
-
-    # Поднимаем временную базу Postgres специально для этого теста
+    
     services:
-      db-test: # Это имя станет хостом (DB_HOST) для контейнера с тестами
-        image: postgres:14
+      # Временная база данных
+      db-test:
+        image: postgres:16
         env:
-          POSTGRES_USER: gitea_user
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Временный Redis для Celery
+      redis-test:
+        image: redis:7.2
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -34,22 +43,27 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.13' # Совпадаем с твоим Dockerfile
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx sqlalchemy asyncpg psycopg2-binary
+
+      - name: Run Ruff (Linter)
+        run: ruff check .
 
       - name: Run Tests
         env:
-          # Сообщаем тестам, куда подключаться.
-          # Хост "db-test" соответствует имени сервиса выше.
           CI: "true"
+          # Настройки базы (хост совпадает с именем сервиса)
           DB_HOST: db-test
           DB_PORT: 5432
-          DB_USER: gitea_user
-          DB_PASS: test_password
+          DB_USER: postgres
+          DB_PASS: postgres
           DB_NAME: test_db
+          # Настройки Redis (хост совпадает с именем сервиса)
+          CELERY_BROKER_URL: redis://redis-test:6379/0
+          CELERY_RESULT_BACKEND: redis://redis-test:6379/0
         run: |
           pytest

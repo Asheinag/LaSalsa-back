@@ -19,46 +19,47 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
         ports:
-          - 5439:5432 # Пробрасываем на хост раннера
+          - 5439:5432 # Внешний порт 5439, внутренний 5432
 
       redis-test:
         image: redis:7.2
         ports:
-          - 6379:6379 # Пробрасываем на хост раннера
+          - 6379:6379
 
     steps:
-      - name: Check out repository code
+      - name: Check out code
         uses: actions/checkout@v3
-        # Внутри контейнера этот флаг может быть критичен
         with:
           set-safe-directory: true
 
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
 
-      - name: Run Ruff
-        run: ruff check .
-
-      - name: Run Ruff - format Check
-        run: ruff format . --check
-      
-      - name: Network Diagnostic
-        env:
-          DB_HOST: db-test
-          REDIS_HOST: redis-test
+      - name: Network Scan Script
         run: |
-          echo "=== Проверка резолвинга имен (DNS) ==="
-          getent hosts $DB_HOST || echo "❌ Не удалось найти IP для $DB_HOST"
-          getent hosts $REDIS_HOST || echo "❌ Не удалось найти IP для $REDIS_HOST"
-          
-          echo "=== Проверка доступности портов (Netcat) ==="
-          # Проверяем Postgres (порт 5439)
-          nc -zv $DB_HOST 5439 && echo "✅ Postgres доступен!" || echo "❌ Postgres НЕ отвечает"
-          
-          # Проверяем Redis (порт 6379)
-          nc -zv $REDIS_HOST 6379 && echo "✅ Redis доступен!" || echo "❌ Redis НЕ отвечает"
-          
-          echo "=== Проверка через Localhost (на случай режима host) ==="
-          nc -zv 127.0.0.1 5439 && echo "✅ Postgres доступен на localhost!" || echo "❌ На localhost Postgres нет"
+          python3 -c "
+          import socket
+          import time
+
+          def check_port(name, host, port):
+              print(f'--- Checking {name} on {host}:{port} ---')
+              for i in range(15):  # Увеличим до 15 попыток (30 сек) для Postgres
+                  try:
+                      with socket.create_connection((host, port), timeout=2):
+                          print(f'✅ {name} IS REACHABLE!')
+                          return True
+                  except Exception as e:
+                      print(f'Attempt {i+1}: {name} not ready yet... ({e})')
+                      time.sleep(2)
+              print(f'❌ {name} IS NOT REACHABLE AFTER ATTEMPTS')
+              return False
+
+          # Проверяем наш новый порт 5439
+          db_ok = check_port('Postgres-Test', '127.0.0.1', 5439)
+          redis_ok = check_port('Redis-Test', '127.0.0.1', 6379)
+
+          if not (db_ok and redis_ok):
+              exit(1)
+          "

@@ -19,7 +19,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
         ports:
-          - 5439:5432 # Внешний порт 5439, внутренний 5432
+          - 5444:5432 # Меняем на 5444
 
       redis-test:
         image: redis:7.2
@@ -29,13 +29,19 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-        with:
-          set-safe-directory: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
+
+      - name: Docker Health Check
+        run: |
+          echo "=== Какие контейнеры сейчас запущены? ==="
+          docker ps
+          echo "=== Логи Postgres (посмотрим, почему он не отвечает) ==="
+          # Ищем контейнер с postgres и выводим последние 20 строк логов
+          docker logs $(docker ps -q --filter ancestor=postgres:16) || echo "Контейнер не найден"
 
       - name: Network Scan Script
         run: |
@@ -45,19 +51,17 @@ jobs:
 
           def check_port(name, host, port):
               print(f'--- Checking {name} on {host}:{port} ---')
-              for i in range(15):  # Увеличим до 15 попыток (30 сек) для Postgres
+              for i in range(10):
                   try:
                       with socket.create_connection((host, port), timeout=2):
                           print(f'✅ {name} IS REACHABLE!')
                           return True
                   except Exception as e:
-                      print(f'Attempt {i+1}: {name} not ready yet... ({e})')
-                      time.sleep(2)
-              print(f'❌ {name} IS NOT REACHABLE AFTER ATTEMPTS')
+                      print(f'Attempt {i+1}: {name} not ready... ({e})')
+                      time.sleep(3)
               return False
 
-          # Проверяем наш новый порт 5439
-          db_ok = check_port('Postgres-Test', '127.0.0.1', 5439)
+          db_ok = check_port('Postgres-Test', '127.0.0.1', 5444)
           redis_ok = check_port('Redis-Test', '127.0.0.1', 6379)
 
           if not (db_ok and redis_ok):

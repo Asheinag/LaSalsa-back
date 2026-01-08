@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from firebase_admin import auth
@@ -7,7 +9,7 @@ security = HTTPBearer()
 
 async def verify_firebase_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-):  # noqa: B008
+) -> dict[str, Any]:  # noqa: B008
     token = credentials.credentials
     try:
         decoded_token = auth.verify_id_token(token)

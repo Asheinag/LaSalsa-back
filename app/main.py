@@ -2,14 +2,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.firebase_config import initialize_firebase
-from app.routers import projects, tasks
+from app.logging_config import configure_logging
+from app.routers import ai, pomodoros, projects, tasks
 
-# Инициализация Firebase
-
-initialize_firebase()
-
+configure_logging()
 
 app = FastAPI(title="LaSalsa API", version="0.1.0")
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize services on application startup."""
+    initialize_firebase()
+
 
 origins = [
     "http://localhost",
@@ -17,7 +22,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # на проде лучше ограничить
+    allow_origins=[
+        "https://app.prelive.lasalsa.kabachok.club",
+        "http://localhost:5173",
+    ],  # на проде лучше ограничить
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,8 +33,15 @@ app.add_middleware(
 
 app.include_router(tasks.router)
 app.include_router(projects.router)
+app.include_router(pomodoros.router)
+app.include_router(ai.router)
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"message": "Welcome to LaSalsa API!"}
+
+
+@app.get("/healthz")
+def healthz() -> dict[str, bool]:
+    return {"ok": True}

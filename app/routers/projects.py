@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,16 +18,14 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.get("/", response_model=list[ProjectBase])
 async def get_projects_endpoint(
-    db: AsyncSession = Depends(get_async_session), user=Depends(verify_firebase_token)
-):  # noqa: B008
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> list[ProjectBase]:  # noqa: B008
     """
     Get a list of projects.
     """
     user_uid = user.get("uid")
     projects = await get_projects(db, user_uid)
-    if not projects:
-        raise HTTPException(status_code=404, detail="No projects found")
-
     return projects
 
 
@@ -33,16 +33,13 @@ async def get_projects_endpoint(
 async def get_tasks_by_project_endpoint(
     project_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Get tasks by project ID.
     """
     user_uid = user.get("uid")
     tasks = await get_tasks_by_project_id(db, project_id, user_uid)
-    if not tasks:
-        raise HTTPException(status_code=404, detail="No tasks found for this project")
-
     return tasks
 
 
@@ -50,8 +47,8 @@ async def get_tasks_by_project_endpoint(
 async def get_project_by_id_endpoint(
     project_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectRead:
     """
     Get a project by its ID.
     """
@@ -67,8 +64,8 @@ async def get_project_by_id_endpoint(
 async def create_project_endpoint(
     project: ProjectCreate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectBase:
     """
     Create a new project
     """

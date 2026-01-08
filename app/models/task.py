@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -29,4 +29,10 @@ class Task(Base):
     owner_uid: Mapped[str] = mapped_column(String, nullable=False, index=True)
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tasks.id"), nullable=True
+    )
+    pomodoro_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("pomodoros.id"), nullable=True
+    )
+    ai_comments = relationship(
+        "TaskAIComment", back_populates="task", cascade="all, delete-orphan"
     )

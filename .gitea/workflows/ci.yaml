@@ -45,15 +45,24 @@ jobs:
       - name: Run Ruff
         run: ruff check .
 
-      - name: Run Tests
+      - name: Run Ruff - format Check
+        run: ruff format -- check .
+      
+      - name: Network Diagnostic
         env:
-          CI: "true"
           DB_HOST: db-test
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASS: postgres
-          DB_NAME: test_db
-          CELERY_BROKER_URL: redis://redis-test:6379/0
-          CELERY_RESULT_BACKEND: redis://redis-test:6379/0
+          REDIS_HOST: redis-test
         run: |
-          pytest
+          echo "=== Проверка резолвинга имен (DNS) ==="
+          getent hosts $DB_HOST || echo "❌ Не удалось найти IP для $DB_HOST"
+          getent hosts $REDIS_HOST || echo "❌ Не удалось найти IP для $REDIS_HOST"
+          
+          echo "=== Проверка доступности портов (Netcat) ==="
+          # Проверяем Postgres (порт 5432)
+          nc -zv $DB_HOST 5432 && echo "✅ Postgres доступен!" || echo "❌ Postgres НЕ отвечает"
+          
+          # Проверяем Redis (порт 6379)
+          nc -zv $REDIS_HOST 6379 && echo "✅ Redis доступен!" || echo "❌ Redis НЕ отвечает"
+          
+          echo "=== Проверка через Localhost (на случай режима host) ==="
+          nc -zv 127.0.0.1 5432 && echo "✅ Postgres доступен на localhost!" || echo "❌ На localhost Postgres нет"

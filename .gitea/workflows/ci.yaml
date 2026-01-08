@@ -9,14 +9,30 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
-          # Это заставит использовать системный git внутри контейнера, 
+          # Это заставит использовать системный git внутри контейнера,
           # а не node-скрипт экшена
           set-safe-directory: true
 
-      - name: Run a simple script
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
         run: |
-          echo "Checking the project..."
-          ls -R
-          
-      - name: Mock Test
-        run: echo "Tests passed successfully!"
+          python -m pip install --upgrade pip
+          pip install ruff pytest pytest-asyncio  # Ставим базу
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run Ruff (Linter)
+        run: |
+          # --select ALL включает вообще все правила, которые есть в Ruff
+          # --ignore ... здесь можно добавить исключения, если станет СЛИШКОМ больно
+          # --output-format=github интегрирует ошибки в интерфейс (если Gitea поддерживает)
+          ruff check .
+
+      - name: Run Ruff Format (Check)
+        run: |
+          # Проверяем, что код отформатирован правильно
+          ruff format --check .
+

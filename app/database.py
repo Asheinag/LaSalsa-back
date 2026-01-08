@@ -28,11 +28,11 @@ class Base(DeclarativeBase):
 
 
 # 👇 Зависимость для FastAPI (yield, а не return!)
-async def get_async_session():
+async def get_async_session() -> async_sessionmaker:
     async with async_session_maker() as session:
         yield session
 
 
 # 👇 Зависимость для синхронных операций (например, Celery)
-def get_sync_session():
+def get_sync_session() -> sessionmaker:
     return sync_sessionmaker()

@@ -1,5 +1,6 @@
 import os
-from typing import Callable, Coroutine
+from collections.abc import Coroutine
+from typing import Callable
 
 import pytest
 from dotenv import load_dotenv

@@ -8,7 +8,7 @@ from app.models import Project
 from app.schemas import ProjectCreate
 
 
-def validate_owner(user_uid: str, project: Project):
+def validate_owner(user_uid: str, project: Project) -> bool:
     return project.owner_uid == user_uid
 
 

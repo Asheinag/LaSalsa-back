@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,8 +18,9 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.get("/", response_model=list[ProjectBase])
 async def get_projects_endpoint(
-    db: AsyncSession = Depends(get_async_session), user=Depends(verify_firebase_token)
-):  # noqa: B008
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> list[ProjectBase]:  # noqa: B008
     """
     Get a list of projects.
     """
@@ -30,8 +33,8 @@ async def get_projects_endpoint(
 async def get_tasks_by_project_endpoint(
     project_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Get tasks by project ID.
     """
@@ -44,8 +47,8 @@ async def get_tasks_by_project_endpoint(
 async def get_project_by_id_endpoint(
     project_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectRead:
     """
     Get a project by its ID.
     """
@@ -61,8 +64,8 @@ async def get_project_by_id_endpoint(
 async def create_project_endpoint(
     project: ProjectCreate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectBase:
     """
     Create a new project
     """

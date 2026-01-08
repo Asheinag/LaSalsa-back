@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,8 +17,9 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 
 @router.post("/review")
 async def review_tasks_endpoint(
-    db: AsyncSession = Depends(get_async_session), user=Depends(verify_firebase_token)
-):
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> dict[str, Any]:
     """
     Эндпоинт для обзора задач с помощью ИИ
     """
@@ -32,8 +35,8 @@ async def review_tasks_endpoint(
 async def get_review_tasks_status(
     celery_task_id: str,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> dict[str, Any]:
     """
     Эндпоинт для получения статуса задачи обзора задач с помощью ИИ
     """
@@ -55,8 +58,8 @@ async def get_review_tasks_status(
 async def get_ai_comment_by_task_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> TaskAIComment:
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -69,8 +72,8 @@ async def get_ai_comment_by_task_endpoint(
 async def get_all_comments_for_task_enpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> list[TaskAIComment]:
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
 

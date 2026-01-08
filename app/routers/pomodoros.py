@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +21,8 @@ router = APIRouter(prefix="/pomodoros", tags=["pomodoros"])
 async def create_pomodoro_endpoint(
     pomodoro: PomodoroCreate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> PomodoroRead:
     """
     Создать новую сессию Pomodoro.
     """
@@ -34,8 +36,8 @@ async def create_pomodoro_endpoint(
 async def get_pomodoro_endpoint(
     pomodoro_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> PomodoroRead:
     """
     Получить сессию Pomodoro по её ID.
     """
@@ -52,8 +54,8 @@ async def get_pomodoro_endpoint(
 async def get_pomodoro_tasks_endpoint(
     pomodoro_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Получить задачи, связанные с сессией Pomodoro по её ID.
     """
@@ -69,8 +71,8 @@ async def get_pomodoro_tasks_endpoint(
 async def delete_pomodoro_endpoint(
     pomodoro_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> Response:
     """
     Удалить сессию Pomodoro по её ID.
     """
@@ -88,8 +90,8 @@ async def update_pomodoro_endpoint(
     pomodoro_id: int,
     pomodoro_update: PomodoroUpdate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> PomodoroRead:
     """
     Обновить заметку сессии Pomodoro по её ID.
     """

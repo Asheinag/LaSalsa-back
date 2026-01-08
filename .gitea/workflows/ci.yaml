@@ -1,13 +1,15 @@
 name: Gitea Actions CI Pipeline
-run-name: ${{ gitea.actor }} is fixing network
+run-name: ${{ gitea.actor }} is testing Gitea Actions
 on:
   pull_request:
-    branches: [main, development, test]
+    branches:
+      - main
+      - development
+      - test
 
 jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
-    # Мы НЕ используем container: здесь, чтобы быть на хосте
 
     services:
       db-test:
@@ -16,49 +18,57 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
-        # ВАЖНО: это заставит контейнер открыться на портах хоста напрямую
         options: >-
           --network host
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
       redis-test:
         image: redis:7.2
         options: >-
           --network host
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Check out code
+      - name: Check out repository code
         uses: actions/checkout@v3
+        with:
+          set-safe-directory: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      - name: Final Connectivity Check
+      - name: Install dependencies
         run: |
-          python3 -c "
-          import socket
-          import time
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Убедимся, что линтер и форматтер тоже стоят
+          pip install ruff pytest pytest-asyncio
 
-          def check(name, port):
-              print(f'Проверяем {name} на 127.0.0.1:{port}...')
-              for i in range(15):
-                  try:
-                      # ТАК КАК СЕТЬ HOST, СТУЧИМСЯ В СТАНДАРТНЫЕ ПОРТЫ
-                      with socket.create_connection(('127.0.0.1', port), timeout=1):
-                          print(f'✅ {name} ПОДКЛЮЧЕН!')
-                          return True
-                  except:
-                      time.sleep(2)
-              return False
+      - name: Run Ruff (Linter & Formatter check)
+        run: |
+          ruff check .
+          ruff format --check .
 
-          # В режиме --network host Postgres будет на 5432, Redis на 6379
-          db_ok = check('Postgres', 5432)
-          redis_ok = check('Redis', 6379)
-          
-          if not (db_ok and redis_ok):
-              print('❌ Стык не удался. Проверяем порты через netstat...')
-              import os
-              os.system('ss -tulpn')
-              exit(1)
-          "
+      - name: Run Tests
+        env:
+          CI: "true"
+          # Используем проверенный 127.0.0.1
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: test_db
+          CELERY_BROKER_URL: redis://127.0.0.1:6379/0
+          CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/0
+        run: |
+          # Небольшая пауза для уверенности, что БД готова к транзакциям
+          sleep 5
+          pytest

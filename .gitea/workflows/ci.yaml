@@ -1,16 +1,14 @@
 name: Gitea Actions CI Pipeline
-run-name: ${{ gitea.actor }} is testing Gitea Actions
+run-name: ${{ gitea.actor }} is fixing network
 on:
   pull_request:
-    branches:
-      - main
-      - development
-      - test
+    branches: [main, development, test]
 
 jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
-    # ВАЖНО: Запускаем шаги внутри контейнера, чтобы работала сеть между сервисами
+    # Мы НЕ используем container: здесь, чтобы быть на хосте
+
     services:
       db-test:
         image: postgres:16
@@ -18,13 +16,14 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
-        ports:
-          - 5444:5433 # Меняем на 5444
+        # ВАЖНО: это заставит контейнер открыться на портах хоста напрямую
+        options: >-
+          --network host
 
       redis-test:
         image: redis:7.2
-        ports:
-          - 6379:6379
+        options: >-
+          --network host
 
     steps:
       - name: Check out code
@@ -35,37 +34,31 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Dynamic Network Discovery
-        id: info # Даем ID шагу, чтобы вытащить IP
-        run: |
-          # Вытаскиваем IP адреса напрямую из Docker
-          DB_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q --filter ancestor=postgres:16))
-          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q --filter ancestor=redis:7.2))
-          
-          echo "db_ip=$DB_IP" >> $GITEA_OUTPUT
-          echo "redis_ip=$REDIS_IP" >> $GITEA_OUTPUT
-          
-          echo "Найден Postgres IP: $DB_IP"
-          echo "Найден Redis IP: $REDIS_IP"
-
-      - name: Diagnostic Scan
+      - name: Final Connectivity Check
         run: |
           python3 -c "
           import socket
           import time
 
-          def check(name, host, port):
-              print(f'Checking {name} at {host}:{port}')
+          def check(name, port):
+              print(f'Проверяем {name} на 127.0.0.1:{port}...')
               for i in range(15):
                   try:
-                      with socket.create_connection((host, port), timeout=1):
-                          print(f'✅ {name} подключен!')
+                      # ТАК КАК СЕТЬ HOST, СТУЧИМСЯ В СТАНДАРТНЫЕ ПОРТЫ
+                      with socket.create_connection(('127.0.0.1', port), timeout=1):
+                          print(f'✅ {name} ПОДКЛЮЧЕН!')
                           return True
                   except:
                       time.sleep(2)
               return False
 
-          # Стучимся ВНУТРЬ сети Docker по прямым IP
-          if not check('Postgres', '${{ steps.info.outputs.db_ip }}', 5432): exit(1)
-          if not check('Redis', '${{ steps.info.outputs.redis_ip }}', 6379): exit(1)
+          # В режиме --network host Postgres будет на 5432, Redis на 6379
+          db_ok = check('Postgres', 5432)
+          redis_ok = check('Redis', 6379)
+          
+          if not (db_ok and redis_ok):
+              print('❌ Стык не удался. Проверяем порты через netstat...')
+              import os
+              os.system('ss -tulpn')
+              exit(1)
           "

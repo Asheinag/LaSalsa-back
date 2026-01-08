@@ -35,35 +35,37 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Docker Health Check
+      - name: Dynamic Network Discovery
+        id: info # Даем ID шагу, чтобы вытащить IP
         run: |
-          echo "=== Какие контейнеры сейчас запущены? ==="
-          docker ps
-          echo "=== Логи Postgres (посмотрим, почему он не отвечает) ==="
-          # Ищем контейнер с postgres и выводим последние 20 строк логов
-          docker logs $(docker ps -q --filter ancestor=postgres:16) || echo "Контейнер не найден"
+          # Вытаскиваем IP адреса напрямую из Docker
+          DB_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q --filter ancestor=postgres:16))
+          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q --filter ancestor=redis:7.2))
+          
+          echo "db_ip=$DB_IP" >> $GITEA_OUTPUT
+          echo "redis_ip=$REDIS_IP" >> $GITEA_OUTPUT
+          
+          echo "Найден Postgres IP: $DB_IP"
+          echo "Найден Redis IP: $REDIS_IP"
 
-      - name: Network Scan Script
+      - name: Diagnostic Scan
         run: |
           python3 -c "
           import socket
           import time
 
-          def check_port(name, host, port):
-              print(f'--- Checking {name} on {host}:{port} ---')
-              for i in range(10):
+          def check(name, host, port):
+              print(f'Checking {name} at {host}:{port}')
+              for i in range(15):
                   try:
-                      with socket.create_connection((host, port), timeout=2):
-                          print(f'✅ {name} IS REACHABLE!')
+                      with socket.create_connection((host, port), timeout=1):
+                          print(f'✅ {name} подключен!')
                           return True
-                  except Exception as e:
-                      print(f'Attempt {i+1}: {name} not ready... ({e})')
-                      time.sleep(3)
+                  except:
+                      time.sleep(2)
               return False
 
-          db_ok = check_port('Postgres-Test', '127.0.0.1', 5444)
-          redis_ok = check_port('Redis-Test', '127.0.0.1', 6379)
-
-          if not (db_ok and redis_ok):
-              exit(1)
+          # Стучимся ВНУТРЬ сети Docker по прямым IP
+          if not check('Postgres', '${{ steps.info.outputs.db_ip }}', 5432): exit(1)
+          if not check('Redis', '${{ steps.info.outputs.redis_ip }}', 6379): exit(1)
           "

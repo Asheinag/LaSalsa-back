@@ -11,9 +11,6 @@ jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
     # ВАЖНО: Запускаем шаги внутри контейнера, чтобы работала сеть между сервисами
-    container:
-      image: catthehacker/ubuntu:act-22.04 
-
     services:
       db-test:
         image: postgres:16
@@ -21,14 +18,13 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
-        # Явно пробрасываем порты, чтобы они были доступны внутри сети контейнера
         ports:
-          - 5432:5432
-      
+          - 5439:5432 # Пробрасываем на хост раннера
+
       redis-test:
         image: redis:7.2
         ports:
-          - 6379:6379
+          - 6379:6379 # Пробрасываем на хост раннера
 
     steps:
       - name: Check out repository code
@@ -58,11 +54,11 @@ jobs:
           getent hosts $REDIS_HOST || echo "❌ Не удалось найти IP для $REDIS_HOST"
           
           echo "=== Проверка доступности портов (Netcat) ==="
-          # Проверяем Postgres (порт 5432)
-          nc -zv $DB_HOST 5432 && echo "✅ Postgres доступен!" || echo "❌ Postgres НЕ отвечает"
+          # Проверяем Postgres (порт 5439)
+          nc -zv $DB_HOST 5439 && echo "✅ Postgres доступен!" || echo "❌ Postgres НЕ отвечает"
           
           # Проверяем Redis (порт 6379)
           nc -zv $REDIS_HOST 6379 && echo "✅ Redis доступен!" || echo "❌ Redis НЕ отвечает"
           
           echo "=== Проверка через Localhost (на случай режима host) ==="
-          nc -zv 127.0.0.1 5432 && echo "✅ Postgres доступен на localhost!" || echo "❌ На localhost Postgres нет"
+          nc -zv 127.0.0.1 5439 && echo "✅ Postgres доступен на localhost!" || echo "❌ На localhost Postgres нет"

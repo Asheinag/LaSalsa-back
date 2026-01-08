@@ -21,10 +21,14 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
-        # Для Postgres внутри Docker-сети порты наружу выставлять не обязательно
+        # Явно пробрасываем порты, чтобы они были доступны внутри сети контейнера
+        ports:
+          - 5432:5432
       
       redis-test:
         image: redis:7.2
+        ports:
+          - 6379:6379
 
     steps:
       - name: Check out repository code

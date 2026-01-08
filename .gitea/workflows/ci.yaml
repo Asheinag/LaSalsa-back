@@ -1,0 +1,22 @@
+name: Gitea Actions Demo
+run-name: ${{ gitea.actor }} is testing Gitea Actions
+on: [pull_request] # Запускать при пуше и создании ПР
+
+jobs:
+  Build-and-Test:
+    runs-on: ubuntu-latest # Этот лейбл мы прописали в настройках Runner'а
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          # Это заставит использовать системный git внутри контейнера, 
+          # а не node-скрипт экшена
+          set-safe-directory: true
+
+      - name: Run a simple script
+        run: |
+          echo "Checking the project..."
+          ls -R
+          
+      - name: Mock Test
+        run: echo "Tests passed successfully!"

@@ -6,6 +6,7 @@ from .pomodoro import (  # noqa: F401
     delete_pomodoro,
     get_pomodoro,
     get_pomodoro_tasks,
+    update_pomodoro,
     validate_owner,
 )
 from .project import (  # noqa: F401

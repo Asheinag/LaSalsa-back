@@ -1,0 +1,40 @@
+name: Deployment Pipeline
+run-name: Deploying ${{ github.ref_name }} by ${{ github.actor }}
+on:
+  push:
+    tags:
+      - 'v*' # Срабатывает только на теги v1.0, v2.0 и т.д.
+
+jobs:
+  Deploy-Simulation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Debug Secrets Readiness
+        run: |
+          echo "=== Проверка наличия секретов для деплоя ==="
+          
+          # Проверяем, не пустые ли переменные (выведет length > 0 или 0)
+          echo "SSH_HOST length: ${#SECRET_HOST}"
+          echo "SSH_USER length: ${#SECRET_USER}"
+          echo "SSH_KEY length: ${#SECRET_KEY}"
+          
+          if [ -z "$SECRET_HOST" ]; then
+            echo "❌ ОШИБКА: Секрет SSH_HOST не найден!"
+          else
+            echo "✅ Секрет SSH_HOST подтянулся (скрыто: ${SECRET_HOST:0:1}***)"
+          fi
+        env:
+          SECRET_HOST: ${{ secrets.SSH_HOST }}
+          SECRET_USER: ${{ secrets.SSH_USER }}
+          SECRET_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Deployment Log
+        run: |
+          echo "🚀 Начинаем имитацию деплоя..."
+          echo "📦 Версия (Тег): ${{ github.ref_name }}"
+          echo "🎯 Целевой сервер: ${{ secrets.SSH_HOST }}"
+          echo "🐳 Команда: docker compose up -d --build"
+          echo "✅ Деплой успешно имитирован!"

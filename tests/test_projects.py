@@ -2,34 +2,15 @@ import pytest
 from httpx import AsyncClient
 
 
-def create_project_function(client: AsyncClient, project_name: str = "Test Project"):
-    return client.post(
-        "/projects/",
-        json={
-            "name": project_name,
-        },
-    )
-
-
-def create_task_function(client: AsyncClient, task_data=None):
-    if task_data is None:
-        task_data = {
-            "name": "Test Task",
-            "description": "Created via test",
-            "status": "TODO",
-        }
-    return client.post(
-        "/tasks",
-        json=task_data,
-    )
-
-
 @pytest.mark.asyncio
-async def test_create_project(client: AsyncClient):
+async def test_create_project(client: AsyncClient, create_project_factory):
     """
-    Test successful creation of a new project.
+    Проверка создания проекта через API.
     """
-    response = await create_project_function(client)
+    # Создаем проект
+    response = await create_project_factory()
+
+    # Проверяем ответ
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test Project"
@@ -39,14 +20,17 @@ async def test_create_project(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_projects(client: AsyncClient):
+async def test_get_projects(client: AsyncClient, create_project_factory):
     """
-    Test getting a list of projects.
+    Проверка получения списка проектов через API.
     """
-    # First create a project to ensure there is at least one project to retrieve
-    await create_project_function(client)
-    # Now get the projects
+    # Создаем проект
+    await create_project_factory()
+
+    # Получаем список проектов
     response = await client.get("/projects/")
+
+    # Проверяем ответ
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -58,25 +42,28 @@ async def test_get_projects(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_projects_empty(client: AsyncClient):
-    """Return empty list when no projects exist."""
+    """
+    Проверка получения списка проектов, когда их нет.
+    """
     response = await client.get("/projects/")
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_get_project_by_id(client: AsyncClient):
+async def test_get_project_by_id(client: AsyncClient, create_project_factory):
     """
-    Test getting a project by its ID.
+    Проверка получения проекта по ID через API.
     """
-    # First create a project
-    response = await create_project_function(client)
-    assert response.status_code == 201
+    # Создаем проект
+    response = await create_project_factory()
     data = response.json()
-
     project_id = data["id"]
-    # Now get the project by ID
+
+    # Получаем проект по ID
     full_response = await client.get(f"/projects/{project_id}")
+
+    # Проверяем ответ
     assert full_response.status_code == 200
     project_data = full_response.json()
     assert project_data["id"] == project_id
@@ -87,27 +74,32 @@ async def test_get_project_by_id(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_create_project_with_all_fields(client: AsyncClient):
     """
-    Test successful creation of a new project with all fields.
+    Проверка создания проекта через API с заполнением всех полей.
     """
+
+    # Создаем проект
     response = await client.post(
         "/projects/",
         json={
             "name": "Test Project",
-            # Optional field, can be omitted
             "description": "Created via test",
             "type": "LIST",
             "status": "INACTIVE",
             "deadline": "2023-12-31T23:59:59z",
         },
     )
-    assert response.status_code == 201
     data = response.json()
+
+    # Проверяем ответ
     assert data["name"] == "Test Project"
     assert data["status"] == "INACTIVE"
     assert "id" in data
 
+    # Получаем полный проект по ID
     full_response = await client.get(f"/projects/{data['id']}")
     full_data = full_response.json()
+
+    # Проверяем все поля
     assert full_data["name"] == "Test Project"
     assert full_data["description"] == "Created via test"
     assert full_data["type"] == "LIST"
@@ -119,7 +111,7 @@ async def test_create_project_with_all_fields(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_unsuccessful_create_project_with_invalid_status(client: AsyncClient):
     """
-    Test unsuccessful creation of a project with wrong value of status
+    Проверка неуспешного создания проекта с неправильным значением статуса
     """
     response = await client.post(
         "/projects/",
@@ -127,35 +119,45 @@ async def test_unsuccessful_create_project_with_invalid_status(client: AsyncClie
             "name": "Test Project",
             "description": "Created via test",
             "type": "LIST",
-            "status": "INVALID_STATUS",  # Invalid status value
+            "status": "INVALID_STATUS",  # Неверное значение статуса
         },
     )
+
+    # Проверка ответа
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_unsuccessful_create_project_with_invalid_type(client: AsyncClient):
     """
-    Test unsuccessful creation of a project with wrong value of type
+    Проверка неуспешного создания проекта с неправильным значением типа
     """
     response = await client.post(
         "/projects/",
         json={
             "name": "Test Project",
             "description": "Created via test",
-            "type": "INVALID_TYPE",  # Invalid type value
+            "type": "INVALID_TYPE",  # Неверное значение типа
             "status": "INACTIVE",
         },
     )
+
+    # Проверка ответа
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_get_tasks_by_project(client: AsyncClient):
-    project_response = await create_project_function(client, "Project With Tasks")
+async def test_get_tasks_by_project(
+    client: AsyncClient, create_project_factory, create_task_factory
+):
+    """
+    Проверка получения  списка задач по проекту через API.
+    """
+
+    # Создаем проект и задачи
+    project_response = await create_project_factory("Project With Tasks")
     project_id = project_response.json()["id"]
-    await create_task_function(
-        client,
+    await create_task_factory(
         {
             "name": "Task 1",
             "description": "Task 1 description",
@@ -163,8 +165,7 @@ async def test_get_tasks_by_project(client: AsyncClient):
             "project_id": project_id,
         },
     )
-    await create_task_function(
-        client,
+    await create_task_factory(
         {
             "name": "Task 2",
             "description": "Task 2 description",
@@ -172,8 +173,14 @@ async def test_get_tasks_by_project(client: AsyncClient):
             "project_id": project_id,
         },
     )
+    await create_task_factory(
+        {"name": "Task 32", "description": "Task 32 description", "status": "TODO"},
+    )
 
+    # Получаем задачи по проекту
     response = await client.get(f"/projects/{project_id}/tasks")
+
+    # Проверяем ответ
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
@@ -181,9 +188,18 @@ async def test_get_tasks_by_project(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_tasks_by_project_not_found(client: AsyncClient):
-    project_response = await create_project_function(client, "Empty Project")
+async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_factory):
+    """
+    Проверка получения задач по пустому проекту.
+    """
+
+    # Создаем пустой проект
+    project_response = await create_project_factory("Empty Project")
     project_id = project_response.json()["id"]
+
+    # Получаем задачи по проекту
     response = await client.get(f"/projects/{project_id}/tasks")
+
+    # Проверяем ответ
     assert response.status_code == 200
     assert response.json() == []

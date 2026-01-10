@@ -1,3 +1,5 @@
+from typing import Any
+
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +29,8 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 async def create_task_endpoint(
     task: TaskCreate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> TaskRead:
     """
     СОздание новой задачи
     """
@@ -44,8 +46,8 @@ async def get_tasks_endpoint(
     offset: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Получение списка задач с пагинацией
     """
@@ -61,8 +63,8 @@ async def get_active_tasks_endpoint(
     offset: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Получение активных задач с пагинацией
     """
@@ -78,8 +80,8 @@ async def get_tasks_today_endpoint(
     offset: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Получение задач на сегодня с пагинацией
     """
@@ -95,8 +97,8 @@ async def get_tasks_later_endpoint(
     offset: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskShort]:
     """
     Получение задач на потом с пагинацией
     """
@@ -111,8 +113,8 @@ async def get_tasks_later_endpoint(
 async def get_task_by_id_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> TaskRead:
     """
     Получение задачи по ID
     """
@@ -130,8 +132,8 @@ async def get_task_by_id_endpoint(
 async def delete_task_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> Response:
     """
     Удаление задачи по ID
     """
@@ -152,8 +154,8 @@ async def update_task_endpoint(
     task_id: int,
     task_data: TaskCreate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> TaskRead:
     """
     Update a task by ID.
     """
@@ -172,8 +174,8 @@ async def update_tasks_field_endpoint(
     task_id: int,
     task_data: TaskUpdate,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> TaskRead:
     """
     Update specific fields of a task by ID.
     """
@@ -192,8 +194,8 @@ async def update_tasks_field_endpoint(
 async def get_chain_tasks_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),
-    user=Depends(verify_firebase_token),  # noqa: B008
-):
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> list[TaskRead]:
     """
     Get all tasks in the chain of a given task.
     """
@@ -206,7 +208,9 @@ async def get_chain_tasks_endpoint(
 
 
 @router.post("/build_chain/{task_id}")
-async def build_chain_endpoint(task_id: int, user=Depends(verify_firebase_token)):  # noqa: B008
+async def build_chain_endpoint(
+    task_id: int, user: dict[str, Any] = Depends(verify_firebase_token)
+) -> dict[str, Any]:  # noqa: B008
     """
     Build a task chain for a given task ID.
     This is an asynchronous operation that can be processed by Celery.
@@ -220,8 +224,8 @@ async def build_chain_endpoint(task_id: int, user=Depends(verify_firebase_token)
 
 @router.get("/build_chain/status/{celery_task_id}")
 async def get_chain_status_endpoint(
-    celery_task_id: str, user=Depends(verify_firebase_token)
-):  # noqa: B008
+    celery_task_id: str, user: dict[str, Any] = Depends(verify_firebase_token)
+) -> dict[str, Any]:  # noqa: B008
     """
     Get the status of the task chain building operation.
     """

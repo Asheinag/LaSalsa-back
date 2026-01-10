@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 
 from celery.utils.log import get_task_logger
 from sqlalchemy import select, update
@@ -15,7 +16,7 @@ logger = get_task_logger(__name__)
 
 
 @celery_app.task(name="app.tasks.make_ai_tasks_review")
-def make_ai_tasks_review(user_uid: str):
+def make_ai_tasks_review(user_uid: str) -> dict[str, Any]:
     """
     Фоновая задача для обзора задач с помощью ИИ.
     """

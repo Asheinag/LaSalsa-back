@@ -365,17 +365,13 @@ async def test_update_pomodoro_invalid_field(
 
 
 @pytest.mark.asyncio
-async def test_update_another_users_pomodoro(
-    client: AsyncClient, db_session
-):
+async def test_update_another_users_pomodoro(client: AsyncClient, db_session):
     """
     Проверка обновления сеанса Помодоро другого пользователя через API.
     """
     # Создаем помидорку от имени другого пользователя напрямую в БД
     another_user_pomodoro = Pomodoro(
-        note = "Other User's Pomodoro",
-        duration_minutes = 25,
-        owner_uid = "other_user_456"
+        note="Other User's Pomodoro", duration_minutes=25, owner_uid="other_user_456"
     )
     db_session.add(another_user_pomodoro)
     db_session.commit()
@@ -397,17 +393,15 @@ async def test_update_another_users_pomodoro(
 
 
 @pytest.mark.asyncio
-async def test_delete_another_users_pomodoro(
-    client: AsyncClient, db_session
-):
+async def test_delete_another_users_pomodoro(client: AsyncClient, db_session):
     """
     Проверка удаления сеанса Помодоро другого пользователя через API.
     """
     # Создаем помидорку от имени другого пользователя напрямую в БД
     another_user_pomodoro = Pomodoro(
-        note = "Other User's Pomodoro to Delete",
-        duration_minutes = 25,
-        owner_uid = "other_user_456"
+        note="Other User's Pomodoro to Delete",
+        duration_minutes=25,
+        owner_uid="other_user_456",
     )
     db_session.add(another_user_pomodoro)
     db_session.commit()

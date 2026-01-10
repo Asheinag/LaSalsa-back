@@ -9,7 +9,7 @@ logger = get_task_logger(__name__)
 
 
 @celery_app.task(name="app.tasks.build_task_chain")
-def build_task_chain(task_id: int):
+def build_task_chain(task_id: int) -> dict:
     logger.info("Starting task for task_id=%s", task_id)
     try:
         with get_sync_session() as session:
@@ -20,7 +20,7 @@ def build_task_chain(task_id: int):
         raise e
 
 
-def collect_chain(session: Session, task_id: int):
+def collect_chain(session: Session, task_id: int) -> dict:
     def recurse(current_id: int) -> dict:
         task: Task = session.query(Task).filter(Task.id == current_id).first()  # type: ignore
         if not task:

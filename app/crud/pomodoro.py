@@ -8,7 +8,7 @@ from app.models import Pomodoro, Task
 from app.schemas import PomodoroCreate, PomodoroUpdate
 
 
-def validate_owner(user_uid: str, pomodoro: Pomodoro):
+def validate_owner(user_uid: str, pomodoro: Pomodoro) -> bool:
     return pomodoro.owner_uid == user_uid
 
 

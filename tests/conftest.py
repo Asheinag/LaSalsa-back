@@ -1,5 +1,6 @@
 import os
-from typing import Callable, Coroutine
+from collections.abc import Coroutine
+from typing import Callable
 
 import pytest
 from dotenv import load_dotenv
@@ -13,19 +14,19 @@ from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
 
-# Получаем путь к корню проекта
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_file_path = os.path.join(project_root, ".env.test")
+# Загружаем .env.test только если мы НЕ в CI
+if not os.getenv("CI"):
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_file_path = os.path.join(project_root, ".env.test")
+    load_dotenv(env_file_path, override=True)
 
-# Загружаем .env.test с полным путем
-load_dotenv(env_file_path, override=True)
+# Теперь берем переменные (они придут либо из .env.test локально, либо из YAML в CI)
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASS = os.getenv("DB_PASS", "password")
+DB_NAME = os.getenv("DB_NAME", "test_db")
+DB_PORT = os.getenv("DB_PORT", "5432")
 
-# Получаем переменные  для подключения к БДнапрямую из os.environ
-DB_HOST = os.getenv("DB_HOST")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-DB_PORT = os.getenv("DB_PORT")
 
 # Формируем строки подключения
 # Асинхронная строка подключения для тестов

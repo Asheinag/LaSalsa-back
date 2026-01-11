@@ -1,18 +1,11 @@
 #!/bin/sh
 set -e
 
-# Если передали явную команду — выполняем её (для миграций/отладки)
-if [ "$#" -gt 0 ]; then
-  echo "Run custom command: $*"
-  exec "$@"
-fi
-
-# Проверим, что задано имя/порт БД (или подставь свои env)
+# 1. Ждем базу (твой надежный цикл)
 : "${DB_HOST:=db}"
 : "${DB_PORT:=5432}"
 
 echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT} ..."
-# ждём БД (до 60 сек)
 for i in $(seq 1 60); do
   if nc -z "${DB_HOST}" "${DB_PORT}" 2>/dev/null; then
     echo "Postgres is up"
@@ -21,9 +14,12 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
-# Прогоним миграции Alembic
-# Если alembic.ini лежит в /app — просто:
-alembic upgrade head
+# 2. Прогоняем миграции ТОЛЬКО если это бэкенд
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+  echo "Running migrations..."
+  alembic upgrade head
+fi
 
-# Запускаем API
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+# 3. Запускаем то, что пришло из docker-compose (uvicorn или celery)
+echo "Starting command: $@"
+exec "$@"

@@ -2,7 +2,7 @@ name: Deploy La Salsa
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   deploy:
@@ -19,12 +19,17 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/lasalsa-app
-            # Создаем .env на лету из секретов
-            echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
-            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-            echo "LASALSA_DB_USER=${{ secrets.LASALSA_DB_USER }}" >> .env
-            echo "LASALSA_DB_PASSWORD='${{ secrets.LASALSA_DB_PASSWORD }}'" >> .env
-            echo "LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}" >> .env
-            
+            # 1. Забираем актуальные файлы (Docker-конфиги, Nginx-конфиги)
             git pull origin main
+
+            # 2. Формируем актуальные секреты под этот код
+            cat <<EOF > .env
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            LASALSA_DB_USER=${{ secrets.LASALSA_DB_USER }}
+            LASALSA_DB_PASSWORD='${{ secrets.LASALSA_DB_PASSWORD }}'
+            LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}
+            EOF
+
+            # 3. Поднимаем всё на свежем коде и свежих секретах
             docker compose -f docker-compose.prod.yml up -d --build

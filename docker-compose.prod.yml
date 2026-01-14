@@ -54,3 +54,10 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     depends_on:
       - lasalsa-backend
+  
+  lasalsa-certbot:
+    image: certbot/certbot
+    container_name: lasalsa-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot

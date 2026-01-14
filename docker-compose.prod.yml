@@ -37,7 +37,7 @@ services:
       - DB_PASS=${LASALSA_DB_PASSWORD}
       - DB_NAME=${LASALSA_DB_NAME}
       - DB_SCHEMA=lasalsa
-      - RUN_MIGRATIONS=false  # Воркеру миграции не нужны
+      - RUN_MIGRATIONS=false # Воркеру миграции не нужны
       - CELERY_BROKER_URL=redis://lasalsa-redis:6379/0
       - CELERY_RESULT_BACKEND=redis://lasalsa-redis:6379/0
     depends_on:
@@ -45,17 +45,26 @@ services:
     command: celery -A app.celery_app.celery_app worker --concurrency=2 --loglevel=info
 
   lasalsa-nginx:
-    image: nginx:stable-alpine
+    image: nginx:1.27-alpine # Используем стабильный легкий образ
     container_name: lasalsa-nginx
     restart: always
     ports:
-      - "80:80"
+      - "80:80" # Для HTTP и проверок Certbot
+      - "443:443" # Для защищенного HTTPS
     volumes:
+      # 1. Твой конфиг (прокидываем всю папку conf.d как "только чтение")
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+      # 2. Папка с сертификатами (куда их положил Certbot)
+      - ./certbot/conf:/etc/letsencrypt:ro
+
+      # 3. Папка для проверок Certbot (чтобы Let's Encrypt видел файлы)
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - lasalsa-backend
-  
+    networks:
+      - lasalsa-network # Убедись, что сеть совпадает с бэкендом
+
   lasalsa-certbot:
     image: certbot/certbot
     container_name: lasalsa-certbot

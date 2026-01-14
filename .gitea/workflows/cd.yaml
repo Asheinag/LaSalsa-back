@@ -13,19 +13,18 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.LASALSA_HOST  }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: DB_HOST,DB_PORT,DB_USER,DB_PASSWORD,DB_NAME
           script: |
             cd ~/lasalsa-app
             # Создаем .env на лету из секретов
             echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
             echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-            echo "DB_PASSWORD='${{ secrets.DB_PASSWORD }}'" >> .env
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "LASALSA_DB_USER=${{ secrets.LASALSA_DB_USER }}" >> .env
+            echo "LASALSA_DB_PASSWORD='${{ secrets.LASALSA_DB_PASSWORD }}'" >> .env
+            echo "LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}" >> .env
             
             git pull origin main
             docker compose -f docker-compose.prod.yml up -d --build

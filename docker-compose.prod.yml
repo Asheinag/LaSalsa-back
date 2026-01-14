@@ -54,16 +54,13 @@ services:
     volumes:
       # 1. Твой конфиг (прокидываем всю папку conf.d как "только чтение")
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-
       # 2. Папка с сертификатами (куда их положил Certbot)
       - ./certbot/conf:/etc/letsencrypt:ro
-
       # 3. Папка для проверок Certbot (чтобы Let's Encrypt видел файлы)
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - lasalsa-backend
-    networks:
-      - lasalsa-network # Убедись, что сеть совпадает с бэкендом
+
 
   lasalsa-certbot:
     image: certbot/certbot

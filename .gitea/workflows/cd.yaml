@@ -26,7 +26,7 @@ jobs:
             mkdir -p ./certs
 
             # Записываем сертификат Firebase из серетов Gitea в файл сертификатов
-            cat <<EOF > ./certs/firebase.json
+            cat <<'EOF' > ./certs/firebase_key.json
             ${{ secrets.FIREBASE_KEY }}
             EOF
 

@@ -19,8 +19,16 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/lasalsa-app
-            # 1. Забираем актуальные файлы (Docker-конфиги, Nginx-конфиги)
+            # Забираем актуальные файлы (Docker-конфиги, Nginx-конфиги)
             git pull origin main
+            
+            # Создаем папку для ключей, если её нет
+            mkdir -p ./certs
+
+            # Записываем сертификат Firebase из серетов Gitea в файл сертификатов
+            cat <<EOF > ./certs/firebase.json
+            ${{ secrets.FIREBASE_KEY }}
+            EOF
 
             # 2. Формируем актуальные секреты под этот код
             cat <<EOF > .env
@@ -29,6 +37,7 @@ jobs:
             LASALSA_DB_USER=${{ secrets.LASALSA_DB_USER }}
             LASALSA_DB_PASSWORD='${{ secrets.LASALSA_DB_PASSWORD }}'
             LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}
+            SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
             EOF
 
             # 3. Поднимаем всё на свежем коде и свежих секретах

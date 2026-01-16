@@ -12,6 +12,8 @@ services:
     build: .
     container_name: lasalsa-backend
     restart: always
+    volumes:
+      - ./certs/firebase_key.json:/app/certs/firebase_key.json:ro
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -22,6 +24,7 @@ services:
       - RUN_MIGRATIONS=true
       - CELERY_BROKER_URL=redis://lasalsa-redis:6379/0
       - CELERY_RESULT_BACKEND=redis://lasalsa-redis:6379/0
+      - SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
     depends_on:
       - lasalsa-redis
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000

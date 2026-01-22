@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.firebase_config import initialize_firebase
 from app.logging_config import configure_logging
@@ -23,8 +22,6 @@ origins = [
     "http://localhost",
 ]
 
-
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 app.add_middleware(
     CORSMiddleware,

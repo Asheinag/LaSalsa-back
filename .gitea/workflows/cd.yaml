@@ -19,18 +19,18 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/lasalsa-app
-            # Забираем актуальные файлы (Docker-конфиги, Nginx-конфиги)
+            # 1. Обновляем структуру (теперь git pull подтянет изменения в папку backend)
             git pull origin main
             
-            # Создаем папку для ключей, если её нет
-            mkdir -p ./certs
+            # 2. Создаем папку для ключей ВНУТРИ backend
+            mkdir -p ./backend/certs
 
-            # Записываем сертификат Firebase из серетов Gitea в файл сертификатов
-            cat <<'EOF' > ./certs/firebase_key.json
+            # 3. Записываем сертификат Firebase (теперь по новому пути)
+            cat <<'EOF' > ./backend/certs/firebase_key.json
             ${{ secrets.FIREBASE_KEY }}
             EOF
 
-            # 2. Формируем актуальные секреты под этот код
+            # 4. Формируем .env (оставляем в корне)
             cat <<EOF > .env
             DB_HOST=${{ secrets.DB_HOST }}
             DB_PORT=${{ secrets.DB_PORT }}
@@ -40,5 +40,6 @@ jobs:
             SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
             EOF
 
-            # 3. Поднимаем всё на свежем коде и свежих секретах
-            docker compose -f docker-compose.prod.yml up -d --build
+            # 5. Пересобираем только бэк и воркер, чтобы не трогать лишний раз фронт/nginx
+            docker compose -f docker-compose.prod.yml up -d --build lasalsa-backend lasalsa-worker
+

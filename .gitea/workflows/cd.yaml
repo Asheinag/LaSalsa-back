@@ -18,17 +18,18 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/lasalsa-app
+            cd ~/lasalsa-app/backend
             # 1. Обновляем структуру (теперь git pull подтянет изменения в папку backend)
             git pull origin main
             
-            # 2. Создаем папку для ключей ВНУТРИ backend
-            mkdir -p ./backend/certs
-
-            # 3. Записываем сертификат Firebase (теперь по новому пути)
-            cat <<'EOF' > ./backend/certs/firebase_key.json
+            # 2. Создаем ключи (путь теперь правильный относительно папки backend)
+            mkdir -p ./certs
+            cat <<'EOF' > ./certs/firebase_key.json
             ${{ secrets.FIREBASE_KEY }}
             EOF
+
+            # 3. Идем в корень, чтобы запустить docker-compose
+            cd ~/lasalsa-app
 
             # 4. Формируем .env (оставляем в корне)
             cat <<EOF > .env

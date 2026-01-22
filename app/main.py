@@ -17,15 +17,14 @@ async def startup_event() -> None:
 
 
 origins = [
+    "https://lasalsa.kabachok.club",
+    "http://lasalsa.kabachok.club",
     "http://localhost",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://app.prelive.lasalsa.kabachok.club",
-        "http://localhost:5173",
-    ],  # на проде лучше ограничить
+    allow_origins=origins,  # на проде лучше ограничить
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

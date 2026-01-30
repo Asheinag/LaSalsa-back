@@ -38,6 +38,8 @@ async def test_get_projects(client: AsyncClient, create_project_factory):
     assert "id" in data[0]
     assert "name" in data[0]
     assert "status" in data[0]
+    assert "owner_uid" in data[0]
+    assert "color_id" in data[0]
 
 
 @pytest.mark.asyncio
@@ -86,6 +88,7 @@ async def test_create_project_with_all_fields(client: AsyncClient):
             "type": "LIST",
             "status": "INACTIVE",
             "deadline": "2023-12-31T23:59:59z",
+            "color_id": 2,
         },
     )
     data = response.json()
@@ -106,6 +109,7 @@ async def test_create_project_with_all_fields(client: AsyncClient):
     assert full_data["status"] == "INACTIVE"
     assert full_data["deadline"] == "2023-12-31T23:59:59Z"
     assert full_data["owner_uid"] == "test_user_123"
+    assert full_data["color_id"] == 2
 
 
 @pytest.mark.asyncio
@@ -155,8 +159,10 @@ async def test_get_tasks_by_project(
     """
 
     # Создаем проект и задачи
-    project_response = await create_project_factory("Project With Tasks")
+    project_response = await create_project_factory({"name": "Project with Tasks"})
+
     project_id = project_response.json()["id"]
+
     await create_task_factory(
         {
             "name": "Task 1",
@@ -194,7 +200,7 @@ async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_fa
     """
 
     # Создаем пустой проект
-    project_response = await create_project_factory("Empty Project")
+    project_response = await create_project_factory({"name": "Empty Project"})
     project_id = project_response.json()["id"]
 
     # Получаем задачи по проекту

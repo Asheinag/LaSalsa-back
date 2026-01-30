@@ -27,3 +27,4 @@ class Project(Base):
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("projects.id"), nullable=True
     )
+    color_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

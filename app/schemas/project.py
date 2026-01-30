@@ -39,6 +39,9 @@ class ProjectCreate(BaseModel):
     deadline: Optional[datetime] = Field(
         None, title="Deadline", description="Deadline for the project"
     )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
+    )
 
 
 # This is a Pydantic model for reading project data, which includes additional fields like id and created_at
@@ -54,4 +57,7 @@ class ProjectRead(ProjectBase):
     )
     type: ProjectType = Field(
         ProjectType.LIST, title="Project Type", description="Type of the project"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
     )

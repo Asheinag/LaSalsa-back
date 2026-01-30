@@ -16,11 +16,11 @@ from app.schemas import ProjectBase, ProjectCreate, ProjectRead, TaskShort
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/", response_model=list[ProjectBase])
+@router.get("/", response_model=list[ProjectRead])
 async def get_projects_endpoint(
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),
-) -> list[ProjectBase]:  # noqa: B008
+) -> list[ProjectRead]:  # noqa: B008
     """
     Get a list of projects.
     """

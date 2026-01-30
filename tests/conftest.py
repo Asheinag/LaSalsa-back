@@ -179,12 +179,17 @@ def create_project_factory(client: AsyncClient) -> Callable[..., Coroutine]:
     """
 
     # Функция для создания проекта
-    async def _create_project(project_name: str = "Test Project"):
+    async def _create_project(project_data: dict = None):
+        if project_data is None:
+            project_data = {
+                "name": "Test Project",
+                "description": "Created via test",
+                "status": "INACTIVE",
+                "color_id": 1,
+            }
         return await client.post(
             "/projects/",
-            json={
-                "name": project_name,
-            },
+            json=project_data,
         )
 
     return _create_project

@@ -23,6 +23,7 @@ async def create_project(
         deadline=project.deadline,
         status=project.status,
         owner_uid=user_uid,
+        color_id=project.color_id,
     )
     db.add(db_project)
     await db.commit()

@@ -14,6 +14,7 @@ from .project import (  # noqa: F401
     get_project_by_id,
     get_project_by_name,
     get_projects,
+    update_project,
 )
 from .task import (  # noqa: F401
     create_task,

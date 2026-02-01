@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import ORIGINS
 from app.firebase_config import initialize_firebase
 from app.logging_config import configure_logging
 from app.routers import ai, pomodoros, projects, tasks
@@ -16,11 +17,7 @@ async def startup_event() -> None:
     initialize_firebase()
 
 
-origins = [
-    "https://lasalsa.kabachok.club",
-    "http://lasalsa.kabachok.club",
-    "http://localhost",
-]
+origins = ORIGINS if ORIGINS != [''] else ["*"]
 
 
 app.add_middleware(

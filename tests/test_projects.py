@@ -209,3 +209,37 @@ async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_fa
     # Проверяем ответ
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_update_project(client: AsyncClient, create_project_factory):
+    """
+    Проверка обновления проекта через API.
+    """
+    # Создаем проект
+    response = await create_project_factory()
+    data = response.json()
+    project_id = data["id"]
+
+    # Обновляем проект через API
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "name": "Updated Project",
+            "description": "Updated description",
+            "type": "KANBAN",
+            "status": "ACTIVE",
+            "deadline": "2024-06-30T12:00:00Z",
+            "color_id": 3,
+        },
+    )
+
+    # Проверяем ответ
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
+    assert updated_data["color_id"] == 3

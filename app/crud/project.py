@@ -60,3 +60,23 @@ async def get_project_by_name(
 async def get_projects(db: AsyncSession, user_uid: str) -> Sequence[Project]:
     result = await db.execute(select(Project).filter(Project.owner_uid == user_uid))
     return result.scalars().all()
+
+
+async def update_project(
+    db: AsyncSession, project_id: int, project_data: ProjectCreate, user_uid: str
+) -> Project | None:
+    project = await get_project_by_id(db, project_id, user_uid)
+    if not project:
+        return None
+
+    project.name = project_data.name
+    project.description = project_data.description
+    project.type = project_data.type
+    project.deadline = project_data.deadline
+    project.status = project_data.status
+    project.color_id = project_data.color_id
+
+    db.add(project)
+    await db.commit()
+    await db.refresh(project)
+    return project

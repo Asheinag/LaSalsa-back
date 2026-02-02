@@ -17,7 +17,7 @@ async def startup_event() -> None:
     initialize_firebase()
 
 
-origins = ORIGINS if ORIGINS != [''] else ["*"]
+origins = ORIGINS if ORIGINS != [""] else ["*"]
 
 
 app.add_middleware(

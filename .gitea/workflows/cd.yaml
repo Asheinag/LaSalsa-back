@@ -39,6 +39,7 @@ jobs:
             LASALSA_DB_PASSWORD='${{ secrets.LASALSA_DB_PASSWORD }}'
             LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}
             SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
+            ORIGINS=${{ secrets.ORIGINS }}
             EOF
 
             # 5. Пересобираем только бэк и воркер, чтобы не трогать лишний раз фронт/nginx

@@ -8,6 +8,7 @@ from app.crud import (
     get_project_by_id,
     get_projects,
     get_tasks_by_project_id,
+    update_project,
 )
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
@@ -75,3 +76,24 @@ async def create_project_endpoint(
         raise HTTPException(status_code=400, detail="Failed to create project")
 
     return new_project
+
+
+@router.patch("/{project_id}", response_model=ProjectRead)
+async def update_project_endpoint(
+    project_id: int,
+    project_data: ProjectCreate,
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectRead:
+    """
+    Update a project by ID.
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    user_uid = user.get("uid")
+    project = await update_project(db, project_id, project_data, user_uid)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project

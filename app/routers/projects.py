@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import (
     create_project,
+    delete_project,
     get_project_by_id,
     get_projects,
     get_tasks_by_project_id,
@@ -107,3 +108,23 @@ async def update_project_endpoint(
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
+
+
+@router.delete("/{project_id}", status_code=204)
+async def delete_project_endpoint(
+    project_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> Response:  # noqa: B008
+    """
+    Delete a project by ID.
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    user_uid = user.get("uid")
+    result = await delete_project(db, project_id, user_uid)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return Response(status_code=204)

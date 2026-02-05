@@ -333,7 +333,9 @@ async def test_update_project(client: AsyncClient, create_project_factory):
 
 
 @pytest.mark.asyncio
-async def test_delete_project(client: AsyncClient, create_project_factory, create_task_factory):
+async def test_delete_project(
+    client: AsyncClient, create_project_factory, create_task_factory
+):
     """
     Проверка удаления проекта через API.
     """
@@ -371,7 +373,9 @@ async def test_delete_project(client: AsyncClient, create_project_factory, creat
     assert len(tasks_list) == 2
 
     # Удаляем проект
-    delete_response = await client.request(method="DELETE", url=f"/projects/{project_id}")
+    delete_response = await client.request(
+        method="DELETE", url=f"/projects/{project_id}"
+    )
     print(f"Delete Response - {delete_response}")
     assert delete_response.status_code == 204
 
@@ -390,4 +394,3 @@ async def test_delete_project(client: AsyncClient, create_project_factory, creat
         assert new_task.status_code == 200
         new_task_data = new_task.json()
         assert new_task_data["project_id"] is None
-

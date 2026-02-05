@@ -11,6 +11,7 @@ from .pomodoro import (  # noqa: F401
 )
 from .project import (  # noqa: F401
     create_project,
+    delete_project,
     get_project_by_id,
     get_project_by_name,
     get_projects,

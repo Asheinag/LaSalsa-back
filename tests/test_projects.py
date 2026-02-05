@@ -214,32 +214,183 @@ async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_fa
 @pytest.mark.asyncio
 async def test_update_project(client: AsyncClient, create_project_factory):
     """
-    Проверка обновления проекта через API.
+    Check updating a project via API.
+    """
+    # Create a project
+    response = await create_project_factory()
+    data = response.json()
+    project_id = data["id"]
+
+    # Update project by one field, and check all fields of it
+    # NAME
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "name": "Updated Project",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Created via test"
+    assert updated_data["type"] == "LIST"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # DESCRIPTION
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "description": "Updated description",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "LIST"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # TYPE
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "type": "KANBAN",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # STATUS
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "status": "ACTIVE",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # DEADLINE
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "deadline": "2024-06-30T12:00:00Z",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
+    assert updated_data["color_id"] == 1
+
+    # COLOR_ID
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "color_id": 3,
+        },
+    )
+
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
+    assert updated_data["color_id"] == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_project(
+    client: AsyncClient, create_project_factory, create_task_factory
+):
+    """
+    Проверка удаления проекта через API.
     """
     # Создаем проект
     response = await create_project_factory()
     data = response.json()
     project_id = data["id"]
 
-    # Обновляем проект через API
-    update_response = await client.patch(
-        f"/projects/{project_id}",
-        json={
-            "name": "Updated Project",
-            "description": "Updated description",
-            "type": "KANBAN",
-            "status": "ACTIVE",
-            "deadline": "2024-06-30T12:00:00Z",
-            "color_id": 3,
+    # Создаем задачи в проекте
+    await create_task_factory(
+        {
+            "name": "Task 1",
+            "description": "Task 1 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+    await create_task_factory(
+        {
+            "name": "Task 2",
+            "description": "Task 2 description",
+            "status": "TODO",
+            "project_id": project_id,
         },
     )
 
-    # Проверяем ответ
-    assert update_response.status_code == 200
-    updated_data = update_response.json()
-    assert updated_data["name"] == "Updated Project"
-    assert updated_data["description"] == "Updated description"
-    assert updated_data["type"] == "KANBAN"
-    assert updated_data["status"] == "ACTIVE"
-    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
-    assert updated_data["color_id"] == 3
+    # Получаем список проверяем что проект есть
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+    assert any(project["id"] == project_id for project in project_list)
+
+    # Проверяем что задачи есть в проекте
+    tasks_response = await client.get(f"/projects/{project_id}/tasks")
+    tasks_list = tasks_response.json()
+    assert len(tasks_list) == 2
+
+    # Удаляем проект
+    delete_response = await client.request(
+        method="DELETE", url=f"/projects/{project_id}"
+    )
+    print(f"Delete Response - {delete_response}")
+    assert delete_response.status_code == 204
+
+    # Проверяем что проект удален
+    project = await client.get(f"/projects/{project_id}")
+    assert project.status_code == 404
+
+    # Получаем список проверяем что проект удален
+    project_list = []
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+
+    # Получаем задачи из списка и проверяем чьл id проекта None
+    for task in tasks_list:
+        new_task = await client.get(f"/tasks/{task['id']}")
+        assert new_task.status_code == 200
+        new_task_data = new_task.json()
+        assert new_task_data["project_id"] is None

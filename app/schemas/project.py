@@ -61,3 +61,25 @@ class ProjectRead(ProjectBase):
     color_id: Optional[int] = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
+
+
+# This is a Pydantic model for updating project data, same as ProjectCreate, but all of fields is Optional
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = Field(
+        None, title="Project Name", description="Name of the project"
+    )
+    status: Optional[ProjectStatus] = Field(
+        None, title="Project Status", description="Current status of the project"
+    )
+    type: Optional[ProjectType] = Field(
+        None, title="Project Type", description="Type of the project"
+    )
+    description: Optional[str] = Field(
+        None, title="Project Description", description="Description of the project"
+    )
+    deadline: Optional[datetime] = Field(
+        None, title="Deadline", description="Deadline for the project"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
+    )

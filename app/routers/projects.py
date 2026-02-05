@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import (
     create_project,
+    delete_project,
     get_project_by_id,
     get_projects,
     get_tasks_by_project_id,
@@ -12,13 +13,21 @@ from app.crud import (
 )
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
-from app.schemas import ProjectBase, ProjectCreate, ProjectRead, TaskShort
+from app.schemas import (
+    ProjectBase,
+    ProjectCreate,
+    ProjectRead,
+    ProjectUpdate,
+    TaskShort,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("/", response_model=list[ProjectRead])
 async def get_projects_endpoint(
+    offset: int = 0,
+    limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),
 ) -> list[ProjectRead]:  # noqa: B008
@@ -26,13 +35,15 @@ async def get_projects_endpoint(
     Get a list of projects.
     """
     user_uid = user.get("uid")
-    projects = await get_projects(db, user_uid)
+    projects = await get_projects(db, user_uid, offset, limit)
     return projects
 
 
 @router.get("/{project_id}/tasks", response_model=list[TaskShort])
 async def get_tasks_by_project_endpoint(
     project_id: int,
+    offset: int = 0,
+    limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
 ) -> list[TaskShort]:
@@ -40,7 +51,7 @@ async def get_tasks_by_project_endpoint(
     Get tasks by project ID.
     """
     user_uid = user.get("uid")
-    tasks = await get_tasks_by_project_id(db, project_id, user_uid)
+    tasks = await get_tasks_by_project_id(db, project_id, user_uid, offset, limit)
     return tasks
 
 
@@ -78,10 +89,10 @@ async def create_project_endpoint(
     return new_project
 
 
-@router.patch("/{project_id}", response_model=ProjectRead)
+@router.patch("/{project_id}", response_model=ProjectRead, status_code=200)
 async def update_project_endpoint(
     project_id: int,
-    project_data: ProjectCreate,
+    project_data: ProjectUpdate,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
 ) -> ProjectRead:
@@ -97,3 +108,23 @@ async def update_project_endpoint(
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
+
+
+@router.delete("/{project_id}", status_code=204)
+async def delete_project_endpoint(
+    project_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),
+) -> Response:  # noqa: B008
+    """
+    Delete a project by ID.
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    user_uid = user.get("uid")
+    result = await delete_project(db, project_id, user_uid)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return Response(status_code=204)

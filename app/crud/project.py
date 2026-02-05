@@ -57,8 +57,8 @@ async def get_project_by_name(
     return project
 
 
-async def get_projects(db: AsyncSession, user_uid: str) -> Sequence[Project]:
-    result = await db.execute(select(Project).filter(Project.owner_uid == user_uid))
+async def get_projects(db: AsyncSession, user_uid: str, offset: int, limit: int) -> Sequence[Project]:
+    result = await db.execute(select(Project).filter(Project.owner_uid == user_uid).offset(offset).limit(limit))
     return result.scalars().all()
 
 

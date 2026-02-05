@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Project
+from app.models import Project, Task
 from app.schemas import ProjectCreate, ProjectUpdate
 
 
@@ -86,4 +86,24 @@ async def update_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
+    return project
+
+
+async def delete_project(
+    db: AsyncSession, project_id: int, user_uid: str
+) -> Project | None:
+    project = await get_project_by_id(db, project_id, user_uid)
+    if not project:
+        return None
+
+    if not validate_owner(user_uid, project):
+        return None
+
+    tasks = await db.execute(select(Task).where(Task.project_id == project_id))
+    tasks = tasks.scalars().all()
+    for task in tasks:
+        task.project_id = None
+
+    await db.delete(project)
+    await db.commit()
     return project

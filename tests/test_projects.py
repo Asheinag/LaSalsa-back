@@ -330,3 +330,67 @@ async def test_update_project(client: AsyncClient, create_project_factory):
     assert updated_data["status"] == "ACTIVE"
     assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
     assert updated_data["color_id"] == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_project(
+    client: AsyncClient, create_project_factory, create_task_factory
+):
+    """
+    Проверка удаления проекта через API.
+    """
+    # Создаем проект
+    response = await create_project_factory()
+    data = response.json()
+    project_id = data["id"]
+
+    # Создаем задачи в проекте
+    await create_task_factory(
+        {
+            "name": "Task 1",
+            "description": "Task 1 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+    await create_task_factory(
+        {
+            "name": "Task 2",
+            "description": "Task 2 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+
+    # Получаем список проверяем что проект есть
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+    assert any(project["id"] == project_id for project in project_list)
+
+    # Проверяем что задачи есть в проекте
+    tasks_response = await client.get(f"/projects/{project_id}/tasks")
+    tasks_list = tasks_response.json()
+    assert len(tasks_list) == 2
+
+    # Удаляем проект
+    delete_response = await client.request(
+        method="DELETE", url=f"/projects/{project_id}"
+    )
+    print(f"Delete Response - {delete_response}")
+    assert delete_response.status_code == 204
+
+    # Проверяем что проект удален
+    project = await client.get(f"/projects/{project_id}")
+    assert project.status_code == 404
+
+    # Получаем список проверяем что проект удален
+    project_list = []
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+
+    # Получаем задачи из списка и проверяем чьл id проекта None
+    for task in tasks_list:
+        new_task = await client.get(f"/tasks/{task['id']}")
+        assert new_task.status_code == 200
+        new_task_data = new_task.json()
+        assert new_task_data["project_id"] is None

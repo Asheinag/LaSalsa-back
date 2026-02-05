@@ -12,7 +12,13 @@ from app.crud import (
 )
 from app.database import get_async_session
 from app.dependencies import verify_firebase_token
-from app.schemas import ProjectBase, ProjectCreate, ProjectRead, TaskShort
+from app.schemas import (
+    ProjectBase,
+    ProjectCreate,
+    ProjectRead,
+    ProjectUpdate,
+    TaskShort,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -78,10 +84,10 @@ async def create_project_endpoint(
     return new_project
 
 
-@router.patch("/{project_id}", response_model=ProjectRead)
+@router.patch("/{project_id}", response_model=ProjectRead, status_code=200)
 async def update_project_endpoint(
     project_id: int,
-    project_data: ProjectCreate,
+    project_data: ProjectUpdate,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
 ) -> ProjectRead:

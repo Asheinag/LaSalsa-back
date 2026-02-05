@@ -1,5 +1,5 @@
 from .pomodoro import PomodoroCreate, PomodoroRead, PomodoroUpdate
-from .project import ProjectBase, ProjectCreate, ProjectRead
+from .project import ProjectBase, ProjectCreate, ProjectRead, ProjectUpdate
 from .task import TaskCreate, TaskID, TaskRead, TaskShort, TaskStatusUpdate, TaskUpdate
 from .task_ai_comment import TaskAIComment, TaskAICommentBase
 
@@ -13,6 +13,7 @@ __all__ = [
     "ProjectCreate",
     "ProjectBase",
     "ProjectRead",
+    "ProjectUpdate",
     "PomodoroCreate",
     "PomodoroRead",
     "PomodoroUpdate",

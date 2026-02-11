@@ -20,6 +20,9 @@ class ProjectBase(BaseModel):
     owner_uid: str = Field(
         ..., title="Owner UID", description="Unique identifier for the project owner"
     )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
+    )
 
 
 # This is a Pydantic model for the Project schema used for creating new projects - same as ProjectBase
@@ -60,6 +63,12 @@ class ProjectRead(ProjectBase):
     )
     color_id: Optional[int] = Field(
         None, title="Color ID", description="Color identifier for the project"
+    )
+    updated_at: Optional[datetime] = Field(
+        None, title="Updated At", description="Timestamp when the project was updated"
+    )
+    parent_id: Optional[int] = Field(
+        None, title="Parent ID", description="ID of the parent project"
     )
 
 

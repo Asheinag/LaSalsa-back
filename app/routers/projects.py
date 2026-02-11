@@ -24,13 +24,13 @@ from app.schemas import (
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/", response_model=list[ProjectRead])
+@router.get("/", response_model=list[ProjectBase])
 async def get_projects_endpoint(
     offset: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),
-) -> list[ProjectRead]:  # noqa: B008
+) -> list[ProjectBase]:  # noqa: B008
     """
     Get a list of projects.
     """
@@ -72,12 +72,12 @@ async def get_project_by_id_endpoint(
     return project
 
 
-@router.post("/", response_model=ProjectBase, status_code=201)
+@router.post("/", response_model=ProjectRead, status_code=201)
 async def create_project_endpoint(
     project: ProjectCreate,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
-) -> ProjectBase:
+) -> ProjectRead:
     """
     Create a new project
     """

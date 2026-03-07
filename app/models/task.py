@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models import Project
 
 
 # This is a SQLAlchemy model for the Task table
@@ -26,6 +31,7 @@ class Task(Base):
     project_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("projects.id"), nullable=True
     )
+    project: Mapped[Optional["Project"]] = relationship("Project", back_populates="tasks")
     owner_uid: Mapped[str] = mapped_column(String, nullable=False, index=True)
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tasks.id"), nullable=True
@@ -33,6 +39,6 @@ class Task(Base):
     pomodoro_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("pomodoros.id"), nullable=True
     )
-    ai_comments = relationship(
-        "TaskAIComment", back_populates="task", cascade="all, delete-orphan"
+    ai_reviews = relationship(
+        "AIReview", back_populates="task", cascade="all, delete-orphan"
     )

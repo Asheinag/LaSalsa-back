@@ -15,11 +15,11 @@ celery_app = Celery(
 
 celery_app.conf.task_routes = {
     "app.tasks.build_task_chain": {"queue": "task_chains"},
-    "app.tasks.make_ai_tasks_review": {"queue": "ai_reviews"},
+    "app.tasks.make_ai_review": {"queue": "ai_reviews"},
 }
 
 # import app.crud  # noqa: E402, F401
 celery_app.conf.include = [
-    "app.crud.task_ai_comment",  # <-- путь к файлу с make_ai_tasks_review
+    "app.crud.ai_review",  # <-- путь к файлу с make_ai_review
     "app.crud.chains",  # <-- или как называется файл с build_task_chain
 ]

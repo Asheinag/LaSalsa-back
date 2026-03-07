@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models import Task
 
 
 class Project(Base):
@@ -28,3 +33,7 @@ class Project(Base):
         Integer, ForeignKey("projects.id"), nullable=True
     )
     color_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    ai_reviews = relationship(
+        "AIReview", back_populates="project", cascade="all, delete-orphan"
+    )
+    tasks: Mapped[list["Task"]] = relationship("Task", back_populates="project")

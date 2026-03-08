@@ -1,8 +1,6 @@
 from .ai_review import (
-    ProjectAIReviewRead,
-    ProjectAIReviewShort,
-    TaskAIReviewRead,
-    TaskAIReviewShort,
+    AIReviewRead,
+    AIReviewShort,
 )
 from .pomodoro import PomodoroCreate, PomodoroRead, PomodoroUpdate
 from .project import ProjectBase, ProjectCreate, ProjectRead, ProjectUpdate
@@ -22,8 +20,6 @@ __all__ = [
     "PomodoroCreate",
     "PomodoroRead",
     "PomodoroUpdate",
-    "TaskAIReviewShort",
-    "TaskAIReviewRead",
-    "ProjectAIReviewRead",
-    "ProjectAIReviewShort",
+    "AIReviewRead",
+    "AIReviewShort",
 ]

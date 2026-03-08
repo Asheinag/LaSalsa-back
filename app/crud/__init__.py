@@ -1,8 +1,9 @@
 import types
 
 from .ai_review import (  # noqa: F401
-    get_active_comment_by_task_id,
-    get_all_comments_for_task,
+    get_all_comments_by_task_id,
+    get_last_active_review_by_task_id,
+    get_review_by_id,
     run_task_review,
 )
 from .chains import build_task_chain, collect_chain  # noqa: F401

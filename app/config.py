@@ -21,4 +21,6 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 ORIGINS = os.getenv("ORIGINS", "").split(",")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
-
+LLM_PROJECT = os.getenv("LLM_PROJECT")
+LLM_PROMPT_ID = os.getenv("LLM_PROMPT_ID")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL")

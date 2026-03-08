@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from datetime import datetime
 from typing import Any
 
 from celery.utils.log import get_task_logger
@@ -8,12 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
-from app.common import TaskStatus
 from app.database import get_sync_session
 from app.models import AIReview, Task
-from app.services import get_task_review
+from app.services import LLM
+
+llm = LLM()
 
 logger = get_task_logger(__name__)
+
+
+def validate_owner(user_uid: str, review: AIReview) -> bool:
+    """Check if the review belongs to the user."""
+    return review.owner_uid == user_uid
 
 
 @celery_app.task(name="app.tasks.make_ai_review")
@@ -21,100 +26,109 @@ def run_task_review(user_uid: str, task_id: int) -> dict[str, Any]:
     """
     Фоновая задача для обзора задач с помощью ИИ.
     """
-
     with get_sync_session() as session:
-        # Получаем задачу по id
-        task = session.execute(
-            select(Task)
-            .where(
-                Task.id == task_id,
-                Task.owner_uid == user_uid
-            )
-        ).scalars().one()
-
-
-        task_name = task.name
-        project_name = task.project.name if task.project else None
-
+        # Получить имена проекта и задачи для формирования запроса к LLM
+        task_name, project_name = _get_task_and_project_name(session, task_id, user_uid)
         # Отправить запрос в llm
-        result = get_task_review(task_name, project_name)
+        comment = llm.get_task_review(task_name, project_name)
+        # деактивировать активные ревью
+        _deactivate_active_reviews_by_task_id(session, task_id, user_uid)
+        # Записать новый комментарий АИшки к задаче
+        _write_new_active_review_for_task(session, task_id, user_uid, comment)
+        # Коммит одной транзакцией
+        session.commit()
 
-    return {"status": "done", "task id": task_id, "query": result}
+    return {"status": "done", "task_id": task_id, "review": comment}
 
 
-
-
-def _collect_tasks_for_ai_review_by_project(
-    session: Session,
-    user_uid: str,
-    project_id: int,
-    offset: int = 0,
-    limit: int = 100,
-) -> Sequence[Task]:
+def _get_task_and_project_name(
+    session: Session, task_id: int, user_uid: str
+) -> tuple[str, str | None]:
     """
-    Собираем задачи пользователя для обзора ИИ.
+    Получение Наименования задачи и проекта, если есть.
     """
-    logger.info(
-        "Collecting tasks for AI review for project_id=%d user_uid=%s, offset=%d, limit=%d",
-        project_id,
-        user_uid,
-        offset,
-        limit,
-    )
-    tasks = session.execute(
-        select(Task)
-        .where(
-            Task.project_id == project_id,
-            Task.owner_uid == user_uid,
-            Task.status != TaskStatus.DONE.value,
+    task = (
+        session.execute(
+            select(Task).where(Task.id == task_id, Task.owner_uid == user_uid)
         )
-        .offset(offset)
-        .limit(limit)
+        .scalars()
+        .one()
     )
-    return tasks.scalars().all()
+
+    task_name = task.name
+    project_name = task.project.name if task.project else None
+
+    return task_name, project_name
 
 
-def _get_ai_comments_for_task(task: Task) -> dict:
+def _deactivate_active_reviews_by_task_id(
+    session: Session, task_id: int, user_uid: str
+) -> None:
     """
-    Вызываем внешний AI сервис для обзора задачи.
+    Деактивация всех предыдущих комментариев
     """
-    request = f"Дай комментарий к задаче {task.name}"
-    return {"request", request}
-
-
-
-async def get_active_comment_by_task_id(
-    db: AsyncSession, task_id: int, user_uid: str
-) -> AIReview:
-    """
-    Получаем активный AI комментарий для задачи по её ID.
-    """
-
-    result = await db.execute(
-        select(AIReview).filter(
+    session.execute(
+        update(AIReview)
+        .where(
             AIReview.task_id == task_id,
             AIReview.is_active,
-            AIReview.owner_uid == user_uid,  # noqa: E712
+            AIReview.owner_uid == user_uid,
         )
+        .values(is_active=False)
+    ).scalars().all()
+
+
+def _write_new_active_review_for_task(
+    session: Session, task_id: int, user_uid: str, comment: str
+) -> None:
+    """
+    Сохранение нового активного комментария
+    """
+    review = AIReview(
+        task_id=task_id,
+        owner_uid=user_uid,
+        comment=comment,
+        is_active=True,
     )
 
-    ret = result.scalars().first()
-    print(f"Итог {ret}")
-    return ret
+    session.add(review)
 
 
-async def get_all_comments_for_task(
+async def get_last_active_review_by_task_id(
+    db: AsyncSession, task_id: str, user_uid: str
+) -> AIReview:
+    """
+    Получение последнего активного ревью
+    """
+    result = await db.execute(
+        select(AIReview).where(
+            AIReview.task_id == task_id,
+            AIReview.is_active,
+            AIReview.owner_uid == user_uid,
+        )
+    )
+    return result.scalars().one()
+
+
+async def get_all_comments_by_task_id(
     db: AsyncSession, task_id: int, user_uid: str
 ) -> Sequence[AIReview]:
     """
-    Получаем все комментарии по задаче
+    Получение всех комментариев по задаче и активных и нет
     """
-
-    result = await db.execute(
-        select(AIReview).filter(
-            AIReview.task_id == task_id,
-            AIReview.owner_uid == user_uid,  # noqa: E712
+    history = await db.execute(
+        select(AIReview).where(
+            AIReview.task_id == task_id, AIReview.owner_uid == user_uid
         )
     )
+    return history.scalars().all()
 
-    return result.scalars().all()
+
+async def get_review_by_id(db: AsyncSession, review_id: int, user_uid: str) -> AIReview:
+    review = await db.get(review_id)
+    if not review:
+        return None
+    if not validate_owner(user_uid, review):
+        return None
+
+    return review

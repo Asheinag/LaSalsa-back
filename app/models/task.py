@@ -31,7 +31,9 @@ class Task(Base):
     project_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("projects.id"), nullable=True
     )
-    project: Mapped[Optional["Project"]] = relationship("Project", back_populates="tasks")
+    project: Mapped[Optional["Project"]] = relationship(
+        "Project", back_populates="tasks"
+    )
     owner_uid: Mapped[str] = mapped_column(String, nullable=False, index=True)
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tasks.id"), nullable=True

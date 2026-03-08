@@ -14,11 +14,9 @@ class AIReview(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow
     )
-    task_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("tasks.id"), nullable=False
-    )
+    task_id: Mapped[int] = mapped_column(Integer, ForeignKey("tasks.id"), nullable=True)
     project_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("projects.id"), nullable=False
+        Integer, ForeignKey("projects.id"), nullable=True
     )
     task = relationship("Task", back_populates="ai_reviews")
     project = relationship("Project", back_populates="ai_reviews")

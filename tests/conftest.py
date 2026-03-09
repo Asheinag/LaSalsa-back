@@ -1,3 +1,4 @@
+import json
 import os
 from collections.abc import Coroutine
 from typing import Callable
@@ -13,6 +14,7 @@ from app.celery_app import celery_app
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
+from app.models.ai_review import AIReview
 
 # Загружаем .env.test только если мы НЕ в CI
 if not os.getenv("CI"):
@@ -232,3 +234,22 @@ def create_pomodoro_factory(client: AsyncClient) -> Callable[..., Coroutine]:
         return await client.post("/pomodoros/", json=pomodoro_data)
 
     return _create_pomodoro
+
+@pytest.fixture
+def create_review_factory(db_session):
+    def _create_review(task_id: int, is_active: bool = True):
+        review = AIReview(
+            task_id=task_id,
+            owner_uid="test_user_123",
+            is_active=is_active,
+            comment=json.dumps({
+                "verdict": "Test verdict",
+                "score": 7,
+                "questions": ["Question 1?"]
+            })
+        )
+        db_session.add(review)
+        db_session.commit()
+        db_session.refresh(review)
+        return review
+    return _create_review

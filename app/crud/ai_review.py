@@ -1,14 +1,16 @@
+import json
 from collections.abc import Sequence
 from typing import Any
 
 from celery.utils.log import get_task_logger
-from sqlalchemy import select, update
+from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
+from app.common import TaskStatus
 from app.database import get_sync_session
-from app.models import AIReview, Task
+from app.models import AIReview, Project, Task
 from app.services import LLM
 
 llm = LLM()
@@ -21,21 +23,16 @@ def validate_owner(user_uid: str, review: AIReview) -> bool:
     return review.owner_uid == user_uid
 
 
-@celery_app.task(name="app.tasks.make_ai_review")
+@celery_app.task(name="app.tasks.make_ai_task_review")
 def run_task_review(user_uid: str, task_id: int) -> dict[str, Any]:
     """
     Фоновая задача для обзора задач с помощью ИИ.
     """
     with get_sync_session() as session:
-        # Получить имена проекта и задачи для формирования запроса к LLM
         task_name, project_name = _get_task_and_project_name(session, task_id, user_uid)
-        # Отправить запрос в llm
         comment = llm.get_task_review(task_name, project_name)
-        # деактивировать активные ревью
-        _deactivate_active_reviews_by_task_id(session, task_id, user_uid)
-        # Записать новый комментарий АИшки к задаче
-        _write_new_active_review_for_task(session, task_id, user_uid, comment)
-        # Коммит одной транзакцией
+        _deactivate_active_reviews(session, user_uid, task_id=task_id)
+        _write_new_active_review(session, user_uid, comment, task_id=task_id)
         session.commit()
 
     return {"status": "done", "task_id": task_id, "review": comment}
@@ -61,8 +58,11 @@ def _get_task_and_project_name(
     return task_name, project_name
 
 
-def _deactivate_active_reviews_by_task_id(
-    session: Session, task_id: int, user_uid: str
+def _deactivate_active_reviews(
+    session: Session,
+    user_uid: str,
+    task_id: int | None = None,
+    project_id: int | None = None,
 ) -> None:
     """
     Деактивация всех предыдущих комментариев
@@ -71,6 +71,7 @@ def _deactivate_active_reviews_by_task_id(
         update(AIReview)
         .where(
             AIReview.task_id == task_id,
+            AIReview.project_id == project_id,
             AIReview.is_active,
             AIReview.owner_uid == user_uid,
         )
@@ -78,31 +79,33 @@ def _deactivate_active_reviews_by_task_id(
     ).scalars().all()
 
 
-def _write_new_active_review_for_task(
-    session: Session, task_id: int, user_uid: str, comment: str
+def _write_new_active_review(
+    session: Session, user_uid: str, comment: str, task_id: int | None = None, project_id: int | None = None,
 ) -> None:
     """
     Сохранение нового активного комментария
     """
     review = AIReview(
         task_id=task_id,
+        project_id=project_id,
         owner_uid=user_uid,
-        comment=comment,
+        comment=json.dumps(comment, ensure_ascii=False),
         is_active=True,
     )
 
     session.add(review)
 
 
-async def get_last_active_review_by_task_id(
-    db: AsyncSession, task_id: str, user_uid: str
+async def get_last_active_review(
+    db: AsyncSession, user_uid: str, task_id: int | None = None, project_id: int | None = None,
 ) -> AIReview:
     """
-    Получение последнего активного ревью
+    Получение последнего активного ревью задачи
     """
     result = await db.execute(
         select(AIReview).where(
             AIReview.task_id == task_id,
+            AIReview.project_id == project_id,
             AIReview.is_active,
             AIReview.owner_uid == user_uid,
         )
@@ -110,25 +113,93 @@ async def get_last_active_review_by_task_id(
     return result.scalars().one()
 
 
-async def get_all_comments_by_task_id(
-    db: AsyncSession, task_id: int, user_uid: str
+async def get_all_comments(
+    db: AsyncSession, user_uid: str, task_id: int | None = None, project_id: int | None = None
 ) -> Sequence[AIReview]:
     """
     Получение всех комментариев по задаче и активных и нет
     """
     history = await db.execute(
         select(AIReview).where(
-            AIReview.task_id == task_id, AIReview.owner_uid == user_uid
+            AIReview.task_id == task_id, AIReview.project_id == project_id, AIReview.owner_uid == user_uid
         )
     )
     return history.scalars().all()
 
 
 async def get_review_by_id(db: AsyncSession, review_id: int, user_uid: str) -> AIReview:
-    review = await db.get(review_id)
+    """
+    Получение ревью по его ID
+    """
+    review = await db.get(AIReview, review_id)
     if not review:
         return None
     if not validate_owner(user_uid, review):
         return None
 
     return review
+
+
+@celery_app.task(name="app.tasks.make_ai_project_review")
+def run_project_review(user_uid: str, project_id: int) -> dict[str, Any]:
+    """
+    Запускаем процесс получения ревью по проекту и его задачам
+    """
+    with get_sync_session() as session:
+        project = _get_project_by_id(session, project_id, user_uid)
+        task_info = _get_project_tasks_info(session, project_id, user_uid)
+        comment = llm.get_project_review(
+            project_name=project.name,
+            completed_tasks=task_info.get("completed"),
+            total_tasks=task_info.get("total"),
+            active_tasks=task_info.get("active_names"),
+        )
+        _deactivate_active_reviews(session, user_uid, project_id=project_id)
+        _write_new_active_review(session, user_uid, comment, project_id=project_id)
+        session.commit()
+
+    return {"status": "done", "project_id": project_id, "review": comment}
+
+
+def _get_project_by_id(session: Session, project_id: int, user_uid: str) -> Project:
+    """
+    Получаем проект по ID
+    """
+    return session.execute(
+        select(Project).where(Project.id == project_id, Project.owner_uid == user_uid)
+    ).scalars().one()
+
+
+def _get_project_tasks_info(
+    session: Session, project_id: int, user_uid: int
+) -> dict[str, Any]:
+    """
+    Получаем информацию об активных и выполненных задачах проекта
+    """
+    result = session.execute(
+        select(
+            func.count().label("total"),
+            func.sum(case((Task.status == TaskStatus.DONE.value, 1), else_=0)).label(
+                "completed"
+            ),
+        ).where(Task.project_id == project_id)
+    ).one()
+
+    total_tasks = result.total
+    completed_tasks = result.completed
+
+    active_task_names = (
+        session.execute(
+            select(Task.name)
+            .where(Task.project_id == project_id, Task.status != TaskStatus.DONE.value)
+            .limit(30)
+        )
+        .scalars()
+        .all()
+    )
+
+    return {
+        "total": total_tasks,
+        "completed": completed_tasks,
+        "active_names": active_task_names,
+    }

@@ -18,7 +18,8 @@ celery_app = Celery(
 
 celery_app.conf.task_routes = {
     "app.tasks.build_task_chain": {"queue": "task_chains"},
-    "app.tasks.make_ai_review": {"queue": "ai_reviews"},
+    "app.tasks.make_ai_task_review": {"queue": "ai_reviews"},
+    "app.tasks.make_ai_project_review": {"queue": "ai_reviews"},
 }
 
 # import app.crud  # noqa: E402, F401

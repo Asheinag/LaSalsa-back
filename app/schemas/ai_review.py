@@ -16,11 +16,14 @@ class AIReviewRead(AIReviewShort):
     created_at: datetime = Field(
         ..., title="Created At", description="Timestamp when the comment was created"
     )
-    task_id: int = Field(
-        ..., title="Task ID", description="Identifier of the associated task"
+    task_id: int | None = Field(
+        default=None, title="Task ID", description="Identifier of the associated task"
+    )
+    project_id: int | None = Field(
+        default=None, title="Project ID", description="Identifier of the associated project"
     )
     comment: dict = Field(
-        ..., title="AI Comment", description="Comment created by AI for task"
+        ..., title="AI Comment", description="Comment created by AI"
     )
 
     @field_validator("comment", mode="before")

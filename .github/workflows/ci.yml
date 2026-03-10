@@ -57,6 +57,10 @@ jobs:
         DB_PORT: 5432
         CELERY_BROKER_URL: redis://localhost:6379/0
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
+        LLM_API_KEY: test-llm-api
+        LLM_PROJECT: test-llm-project
+        LLM_PROMPT_ID: test-llm-prompt
+        LLM_BASE_URL: https://ai.llm.net/v1
       run: |
         pytest -xvs --tb=short
 

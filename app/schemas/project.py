@@ -13,7 +13,7 @@ class ProjectBase(BaseModel):
         ..., title="Project ID", description="Unique identifier for the project"
     )
     status: ProjectStatus = Field(
-        ProjectStatus.INACTIVE,
+        ProjectStatus.ACTIVE,
         title="Project Status",
         description="Current status of the project",
     )
@@ -29,7 +29,7 @@ class ProjectBase(BaseModel):
 class ProjectCreate(BaseModel):
     name: str = Field(..., title="Project Name", description="Name of the project")
     status: ProjectStatus = Field(
-        ProjectStatus.INACTIVE,
+        ProjectStatus.ACTIVE,
         title="Project Status",
         description="Current status of the project",
     )

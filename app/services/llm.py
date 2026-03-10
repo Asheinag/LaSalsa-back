@@ -7,8 +7,10 @@ from app.config import LLM_API_KEY, LLM_BASE_URL, LLM_PROJECT, LLM_PROMPT_ID
 
 logger = get_task_logger(__name__)
 
+
 class LLMError(Exception):
     pass
+
 
 class LLM:
     def __init__(self) -> None:

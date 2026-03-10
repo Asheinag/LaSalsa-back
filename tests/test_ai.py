@@ -1,9 +1,3 @@
-import json
-
-import pytest
-from httpx import AsyncClient
-
-
 async def test_get_active_review(client, create_task_factory, create_review_factory):
     task = await create_task_factory()
     task_id = task.json()["id"]
@@ -14,4 +8,3 @@ async def test_get_active_review(client, create_task_factory, create_review_fact
     data = response.json()
     assert data["task_id"] == task_id
     assert "comment" in data
-    

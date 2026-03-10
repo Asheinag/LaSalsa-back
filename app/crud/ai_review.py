@@ -80,7 +80,11 @@ def _deactivate_active_reviews(
 
 
 def _write_new_active_review(
-    session: Session, user_uid: str, comment: str, task_id: int | None = None, project_id: int | None = None,
+    session: Session,
+    user_uid: str,
+    comment: str,
+    task_id: int | None = None,
+    project_id: int | None = None,
 ) -> None:
     """
     Сохранение нового активного комментария
@@ -97,7 +101,10 @@ def _write_new_active_review(
 
 
 async def get_last_active_review(
-    db: AsyncSession, user_uid: str, task_id: int | None = None, project_id: int | None = None,
+    db: AsyncSession,
+    user_uid: str,
+    task_id: int | None = None,
+    project_id: int | None = None,
 ) -> AIReview:
     """
     Получение последнего активного ревью задачи
@@ -114,14 +121,19 @@ async def get_last_active_review(
 
 
 async def get_all_comments(
-    db: AsyncSession, user_uid: str, task_id: int | None = None, project_id: int | None = None
+    db: AsyncSession,
+    user_uid: str,
+    task_id: int | None = None,
+    project_id: int | None = None,
 ) -> Sequence[AIReview]:
     """
     Получение всех комментариев по задаче и активных и нет
     """
     history = await db.execute(
         select(AIReview).where(
-            AIReview.task_id == task_id, AIReview.project_id == project_id, AIReview.owner_uid == user_uid
+            AIReview.task_id == task_id,
+            AIReview.project_id == project_id,
+            AIReview.owner_uid == user_uid,
         )
     )
     return history.scalars().all()
@@ -165,9 +177,15 @@ def _get_project_by_id(session: Session, project_id: int, user_uid: str) -> Proj
     """
     Получаем проект по ID
     """
-    return session.execute(
-        select(Project).where(Project.id == project_id, Project.owner_uid == user_uid)
-    ).scalars().one()
+    return (
+        session.execute(
+            select(Project).where(
+                Project.id == project_id, Project.owner_uid == user_uid
+            )
+        )
+        .scalars()
+        .one()
+    )
 
 
 def _get_project_tasks_info(

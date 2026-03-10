@@ -37,6 +37,7 @@ async def run_task_review_endpoint(
 
     return {"celery_task_id": result.id, "status": f"Task {task_id} AI review started"}
 
+
 @router.post("/projects/{project_id}/run")
 async def run_project_review_endpoint(
     project_id: int,
@@ -52,7 +53,11 @@ async def run_project_review_endpoint(
     user_uid = user.get("uid")
     result = run_project_review.delay(user_uid, project_id)
 
-    return {"celery_task_id": result.id, "status": f"Project {project_id} AI review started"}
+    return {
+        "celery_task_id": result.id,
+        "status": f"Project {project_id} AI review started",
+    }
+
 
 @router.get("/status/{celery_task_id}")
 async def get_ai_review_status_endpoint(
@@ -121,6 +126,7 @@ async def get_review_by_id_endpoint(
     review = await get_review_by_id(db, review_id, user_uid)
 
     return review
+
 
 @router.get("/projects/{project_id}/active", response_model=AIReviewRead)
 async def get_active_review_by_project_id_endpoint(

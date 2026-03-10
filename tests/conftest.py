@@ -235,6 +235,7 @@ def create_pomodoro_factory(client: AsyncClient) -> Callable[..., Coroutine]:
 
     return _create_pomodoro
 
+
 @pytest.fixture
 def create_review_factory(db_session):
     def _create_review(task_id: int, is_active: bool = True):
@@ -242,14 +243,13 @@ def create_review_factory(db_session):
             task_id=task_id,
             owner_uid="test_user_123",
             is_active=is_active,
-            comment=json.dumps({
-                "verdict": "Test verdict",
-                "score": 7,
-                "questions": ["Question 1?"]
-            })
+            comment=json.dumps(
+                {"verdict": "Test verdict", "score": 7, "questions": ["Question 1?"]}
+            ),
         )
         db_session.add(review)
         db_session.commit()
         db_session.refresh(review)
         return review
+
     return _create_review

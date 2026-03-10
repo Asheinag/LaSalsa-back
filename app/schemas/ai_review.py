@@ -20,11 +20,11 @@ class AIReviewRead(AIReviewShort):
         default=None, title="Task ID", description="Identifier of the associated task"
     )
     project_id: int | None = Field(
-        default=None, title="Project ID", description="Identifier of the associated project"
+        default=None,
+        title="Project ID",
+        description="Identifier of the associated project",
     )
-    comment: dict = Field(
-        ..., title="AI Comment", description="Comment created by AI"
-    )
+    comment: dict = Field(..., title="AI Comment", description="Comment created by AI")
 
     @field_validator("comment", mode="before")
     @classmethod

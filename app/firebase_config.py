@@ -9,7 +9,7 @@ from app.config import SERVICE_ACCOUNT_KEY_PATH
 logger = logging.getLogger(__name__)
 
 
-def initialize_firebase():
+def initialize_firebase() -> None:
     service_account_path = os.getenv("SERVICE_ACCOUNT_KEY_PATH")
 
     # В CI/CD или тестовой среде можно пропустить инициализацию

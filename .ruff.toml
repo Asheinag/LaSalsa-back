@@ -1,21 +1,17 @@
 [lint]
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "C",  # mccabe
-    "B",  # bugbear
-]
-extend-ignore = [
-    "E501",  # line too long
+select = ["E", "W", "F", "I", "B", "S", "N", "UP", "ANN", "ASYNC"]
+# Используем просто ignore для глобального отключения
+ignore = [
+    "E501",   # line too long
+    "COM812", # Trailing comma missing (отключаем везде)
+    "ISC001", # Implicit string concatenation (рекомендация для форматтера)
 ]
 
 [lint.per-file-ignores]
-# Игнорируем B008 в роутерах FastAPI и зависимостях
 "app/routers/*.py" = ["B008"]
 "app/dependencies.py" = ["B008"]
-
+"tests/*" = ["S101", "PLR2004", "ANN001", "ANN201", "ANN202",]
+"alembic/env.py" = ["ANN001", "ANN201", "ANN202",] 
 
 [format]
 quote-style = "double"

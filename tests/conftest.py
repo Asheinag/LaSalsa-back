@@ -1,5 +1,7 @@
+import json
 import os
-from typing import Callable, Coroutine
+from collections.abc import Coroutine
+from typing import Callable
 
 import pytest
 from dotenv import load_dotenv
@@ -12,20 +14,21 @@ from app.celery_app import celery_app
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
+from app.models.ai_review import AIReview
 
-# Получаем путь к корню проекта
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_file_path = os.path.join(project_root, ".env.test")
+# Загружаем .env.test только если мы НЕ в CI
+if not os.getenv("CI"):
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_file_path = os.path.join(project_root, ".env.test")
+    load_dotenv(env_file_path, override=True)
 
-# Загружаем .env.test с полным путем
-load_dotenv(env_file_path, override=True)
+# Теперь берем переменные (они придут либо из .env.test локально, либо из YAML в CI)
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASS = os.getenv("DB_PASS", "password")
+DB_NAME = os.getenv("DB_NAME", "test_db")
+DB_PORT = os.getenv("DB_PORT", "5432")
 
-# Получаем переменные  для подключения к БДнапрямую из os.environ
-DB_HOST = os.getenv("DB_HOST")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-DB_PORT = os.getenv("DB_PORT")
 
 # Формируем строки подключения
 # Асинхронная строка подключения для тестов
@@ -178,12 +181,17 @@ def create_project_factory(client: AsyncClient) -> Callable[..., Coroutine]:
     """
 
     # Функция для создания проекта
-    async def _create_project(project_name: str = "Test Project"):
+    async def _create_project(project_data: dict = None):
+        if project_data is None:
+            project_data = {
+                "name": "Test Project",
+                "description": "Created via test",
+                "status": "INACTIVE",
+                "color_id": 1,
+            }
         return await client.post(
             "/projects/",
-            json={
-                "name": project_name,
-            },
+            json=project_data,
         )
 
     return _create_project
@@ -226,3 +234,22 @@ def create_pomodoro_factory(client: AsyncClient) -> Callable[..., Coroutine]:
         return await client.post("/pomodoros/", json=pomodoro_data)
 
     return _create_pomodoro
+
+
+@pytest.fixture
+def create_review_factory(db_session):
+    def _create_review(task_id: int, is_active: bool = True):
+        review = AIReview(
+            task_id=task_id,
+            owner_uid="test_user_123",
+            is_active=is_active,
+            comment=json.dumps(
+                {"verdict": "Test verdict", "score": 7, "questions": ["Question 1?"]}
+            ),
+        )
+        db_session.add(review)
+        db_session.commit()
+        db_session.refresh(review)
+        return review
+
+    return _create_review

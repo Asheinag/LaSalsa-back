@@ -41,3 +41,14 @@ class PomodoroRead(BaseModel):
         title="Previous Pomodoro ID",
         description="ID of the previous Pomodoro session",
     )
+
+
+class PomodoroUpdate(BaseModel):
+    note: Optional[str] = Field(
+        None, title="Note", description="Updated note for the Pomodoro session"
+    )
+    duration_minutes: Optional[int] = Field(
+        None,
+        title="Duration Minutes",
+        description="Updated duration of the Pomodoro session in minutes",
+    )

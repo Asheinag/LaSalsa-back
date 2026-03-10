@@ -5,10 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Pomodoro, Task
-from app.schemas import PomodoroCreate
+from app.schemas import PomodoroCreate, PomodoroUpdate
 
 
-def validate_owner(user_uid: str, pomodoro: Pomodoro):
+def validate_owner(user_uid: str, pomodoro: Pomodoro) -> bool:
     return pomodoro.owner_uid == user_uid
 
 
@@ -53,3 +53,22 @@ async def delete_pomodoro(db: AsyncSession, pomodoro_id: int, user_uid: int) -> 
 
     await db.delete(result)
     await db.commit()
+
+
+async def update_pomodoro(
+    db: AsyncSession, pomodoro_id: int, pomodoro_update: PomodoroUpdate, user_uid: str
+) -> Optional[Pomodoro]:
+    result = await db.get(Pomodoro, pomodoro_id)
+    if not result or not validate_owner(user_uid, result):
+        return None
+
+    if pomodoro_update.note is not None:
+        result.note = pomodoro_update.note
+
+    if pomodoro_update.duration_minutes is not None:
+        result.duration_minutes = pomodoro_update.duration_minutes
+
+    db.add(result)
+    await db.commit()
+    await db.refresh(result)
+    return result

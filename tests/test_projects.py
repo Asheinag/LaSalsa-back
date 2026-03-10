@@ -38,6 +38,8 @@ async def test_get_projects(client: AsyncClient, create_project_factory):
     assert "id" in data[0]
     assert "name" in data[0]
     assert "status" in data[0]
+    assert "owner_uid" in data[0]
+    assert "color_id" in data[0]
 
 
 @pytest.mark.asyncio
@@ -86,6 +88,7 @@ async def test_create_project_with_all_fields(client: AsyncClient):
             "type": "LIST",
             "status": "INACTIVE",
             "deadline": "2023-12-31T23:59:59z",
+            "color_id": 2,
         },
     )
     data = response.json()
@@ -106,6 +109,7 @@ async def test_create_project_with_all_fields(client: AsyncClient):
     assert full_data["status"] == "INACTIVE"
     assert full_data["deadline"] == "2023-12-31T23:59:59Z"
     assert full_data["owner_uid"] == "test_user_123"
+    assert full_data["color_id"] == 2
 
 
 @pytest.mark.asyncio
@@ -155,8 +159,10 @@ async def test_get_tasks_by_project(
     """
 
     # Создаем проект и задачи
-    project_response = await create_project_factory("Project With Tasks")
+    project_response = await create_project_factory({"name": "Project with Tasks"})
+
     project_id = project_response.json()["id"]
+
     await create_task_factory(
         {
             "name": "Task 1",
@@ -194,7 +200,7 @@ async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_fa
     """
 
     # Создаем пустой проект
-    project_response = await create_project_factory("Empty Project")
+    project_response = await create_project_factory({"name": "Empty Project"})
     project_id = project_response.json()["id"]
 
     # Получаем задачи по проекту
@@ -203,3 +209,188 @@ async def test_get_tasks_by_project_empty(client: AsyncClient, create_project_fa
     # Проверяем ответ
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_update_project(client: AsyncClient, create_project_factory):
+    """
+    Check updating a project via API.
+    """
+    # Create a project
+    response = await create_project_factory()
+    data = response.json()
+    project_id = data["id"]
+
+    # Update project by one field, and check all fields of it
+    # NAME
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "name": "Updated Project",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Created via test"
+    assert updated_data["type"] == "LIST"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # DESCRIPTION
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "description": "Updated description",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "LIST"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # TYPE
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "type": "KANBAN",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "INACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # STATUS
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "status": "ACTIVE",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] is None
+    assert updated_data["color_id"] == 1
+
+    # DEADLINE
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "deadline": "2024-06-30T12:00:00Z",
+        },
+    )
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
+    assert updated_data["color_id"] == 1
+
+    # COLOR_ID
+    update_response = await client.patch(
+        f"/projects/{project_id}",
+        json={
+            "color_id": 3,
+        },
+    )
+
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["name"] == "Updated Project"
+    assert updated_data["id"] == project_id
+    assert updated_data["owner_uid"] == "test_user_123"
+    assert updated_data["description"] == "Updated description"
+    assert updated_data["type"] == "KANBAN"
+    assert updated_data["status"] == "ACTIVE"
+    assert updated_data["deadline"] == "2024-06-30T12:00:00Z"
+    assert updated_data["color_id"] == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_project(
+    client: AsyncClient, create_project_factory, create_task_factory
+):
+    """
+    Проверка удаления проекта через API.
+    """
+    # Создаем проект
+    response = await create_project_factory()
+    data = response.json()
+    project_id = data["id"]
+
+    # Создаем задачи в проекте
+    await create_task_factory(
+        {
+            "name": "Task 1",
+            "description": "Task 1 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+    await create_task_factory(
+        {
+            "name": "Task 2",
+            "description": "Task 2 description",
+            "status": "TODO",
+            "project_id": project_id,
+        },
+    )
+
+    # Получаем список проверяем что проект есть
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+    assert any(project["id"] == project_id for project in project_list)
+
+    # Проверяем что задачи есть в проекте
+    tasks_response = await client.get(f"/projects/{project_id}/tasks")
+    tasks_list = tasks_response.json()
+    assert len(tasks_list) == 2
+
+    # Удаляем проект
+    delete_response = await client.request(
+        method="DELETE", url=f"/projects/{project_id}"
+    )
+    print(f"Delete Response - {delete_response}")
+    assert delete_response.status_code == 204
+
+    # Проверяем что проект удален
+    project = await client.get(f"/projects/{project_id}")
+    assert project.status_code == 404
+
+    # Получаем список проверяем что проект удален
+    project_list = []
+    projects_response = await client.get("/projects/")
+    project_list = projects_response.json()
+
+    # Получаем задачи из списка и проверяем чьл id проекта None
+    for task in tasks_list:
+        new_task = await client.get(f"/tasks/{task['id']}")
+        assert new_task.status_code == 200
+        new_task_data = new_task.json()
+        assert new_task_data["project_id"] is None

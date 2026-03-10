@@ -13,12 +13,15 @@ class ProjectBase(BaseModel):
         ..., title="Project ID", description="Unique identifier for the project"
     )
     status: ProjectStatus = Field(
-        ProjectStatus.INACTIVE,
+        ProjectStatus.ACTIVE,
         title="Project Status",
         description="Current status of the project",
     )
     owner_uid: str = Field(
         ..., title="Owner UID", description="Unique identifier for the project owner"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
     )
 
 
@@ -26,7 +29,7 @@ class ProjectBase(BaseModel):
 class ProjectCreate(BaseModel):
     name: str = Field(..., title="Project Name", description="Name of the project")
     status: ProjectStatus = Field(
-        ProjectStatus.INACTIVE,
+        ProjectStatus.ACTIVE,
         title="Project Status",
         description="Current status of the project",
     )
@@ -38,6 +41,9 @@ class ProjectCreate(BaseModel):
     )
     deadline: Optional[datetime] = Field(
         None, title="Deadline", description="Deadline for the project"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
     )
 
 
@@ -54,4 +60,35 @@ class ProjectRead(ProjectBase):
     )
     type: ProjectType = Field(
         ProjectType.LIST, title="Project Type", description="Type of the project"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
+    )
+    updated_at: Optional[datetime] = Field(
+        None, title="Updated At", description="Timestamp when the project was updated"
+    )
+    parent_id: Optional[int] = Field(
+        None, title="Parent ID", description="ID of the parent project"
+    )
+
+
+# This is a Pydantic model for updating project data, same as ProjectCreate, but all of fields is Optional
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = Field(
+        None, title="Project Name", description="Name of the project"
+    )
+    status: Optional[ProjectStatus] = Field(
+        None, title="Project Status", description="Current status of the project"
+    )
+    type: Optional[ProjectType] = Field(
+        None, title="Project Type", description="Type of the project"
+    )
+    description: Optional[str] = Field(
+        None, title="Project Description", description="Description of the project"
+    )
+    deadline: Optional[datetime] = Field(
+        None, title="Deadline", description="Deadline for the project"
+    )
+    color_id: Optional[int] = Field(
+        None, title="Color ID", description="Color identifier for the project"
     )

@@ -23,9 +23,7 @@ config.set_section_option(section, "DB_PORT", os.getenv("DB_PORT", ""))
 config.set_section_option(section, "DB_USER", os.getenv("DB_USER", ""))
 config.set_section_option(section, "DB_NAME", os.getenv("DB_NAME", ""))
 config.set_section_option(section, "DB_PASS", os.getenv("DB_PASS", ""))
-print(
-    f"Using DB_HOST: {os.getenv('DB_HOST')}, DB_USER: {os.getenv('DB_USER')}, DB_NAME: {os.getenv('DB_NAME')}, DB_PORT: {os.getenv('DB_PORT')}, DB_PASS: {os.getenv('DB_PASS')}"
-)
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -88,7 +86,7 @@ async def run_migrations_online() -> None:
         await connection.run_sync(do_run_migrations)
 
 
-def do_run_migrations(connection):
+def do_run_migrations(connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():

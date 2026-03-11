@@ -1,3 +1,4 @@
+import json
 import os
 from collections.abc import Coroutine
 from typing import Callable
@@ -13,6 +14,7 @@ from app.celery_app import celery_app
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
+from app.models.ai_review import AIReview
 
 # Загружаем .env.test только если мы НЕ в CI
 if not os.getenv("CI"):
@@ -232,3 +234,59 @@ def create_pomodoro_factory(client: AsyncClient) -> Callable[..., Coroutine]:
         return await client.post("/pomodoros/", json=pomodoro_data)
 
     return _create_pomodoro
+
+
+@pytest.fixture
+async def async_db():
+    """
+    Асинхронная сессия БД для тестов CRUD-функций.
+    Управляет схемой самостоятельно, не зависит от client/db_session.
+    """
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    maker = async_sessionmaker(engine, expire_on_commit=False)
+    async with maker() as session:
+        yield session
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
+
+
+@pytest.fixture
+def create_review_factory(db_session):
+    def _create_review(task_id: int, is_active: bool = True):
+        review = AIReview(
+            task_id=task_id,
+            owner_uid="test_user_123",
+            is_active=is_active,
+            comment=json.dumps(
+                {"verdict": "Test verdict", "score": 7, "questions": ["Question 1?"]}
+            ),
+        )
+        db_session.add(review)
+        db_session.commit()
+        db_session.refresh(review)
+        return review
+
+    return _create_review
+
+
+@pytest.fixture
+def create_project_review_factory(db_session):
+    def _create_project_review(project_id: int, is_active: bool = True):
+        review = AIReview(
+            project_id=project_id,
+            owner_uid="test_user_123",
+            is_active=is_active,
+            comment=json.dumps(
+                {"verdict": "Test verdict", "score": 7, "questions": ["Question 1?"]}
+            ),
+        )
+        db_session.add(review)
+        db_session.commit()
+        db_session.refresh(review)
+        return review
+
+    return _create_project_review

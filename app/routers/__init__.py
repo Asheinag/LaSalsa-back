@@ -1,4 +1,4 @@
-from .ai import router as ai_router
+from .ai_reviews import router as ai_router
 from .pomodoros import router as pomodoros_router
 from .projects import router as projects_router
 from .tasks import router as tasks_router

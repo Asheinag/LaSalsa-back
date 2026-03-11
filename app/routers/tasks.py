@@ -1,10 +1,9 @@
 from typing import Any
 
-from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.celery_app import celery_app
+from app.celery_app import get_celery_task_status
 from app.crud import (
     build_task_chain,
     create_task,
@@ -233,13 +232,4 @@ async def get_chain_status_endpoint(
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    result = AsyncResult(celery_task_id, app=celery_app)
-
-    if result.state == "PENDING":
-        return {"status": "pending"}
-    elif result.state == "SUCCESS":
-        return {"status": "done", "data": result.result}
-    elif result.state == "FAILURE":
-        return {"status": "error", "reason": str(result.result)}
-    else:
-        return {"status": result.state}
+    return get_celery_task_status(celery_task_id)

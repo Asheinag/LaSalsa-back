@@ -117,7 +117,7 @@ async def get_last_active_review(
             AIReview.owner_uid == user_uid,
         )
     )
-    return result.scalars().one()
+    return result.scalars().one_or_none()
 
 
 async def get_all_comments(

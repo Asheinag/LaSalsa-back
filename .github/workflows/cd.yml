@@ -82,6 +82,10 @@ jobs:
             LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}
             SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
             ORIGINS=${{ secrets.ORIGINS }}
+            LLM_API_KEY=${{ secrets.LLM_API_KEY }}
+            LLM_PROJECT=${{ secrets.LLM_PROJECT }}
+            LLM_PROMPT_ID=${{ secrets.LLM_PROMPT_ID }}
+            LLM_BASE_URL=${{ secrets.LLM_BASE_URL }}
             EOF
 
             # Генерируем firebase ключ

@@ -1,38 +1,79 @@
-name: Deploy La Salsa
+name: Deploy to Production
+
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag для отката (SHA коммита, например: abc1234)'
+        required: false
+        default: 'latest'
+
+env:
+  IMAGE: ghcr.io/kabachok-club/lasalsa-back
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: production
+    outputs:
+      deploy_tag: ${{ steps.meta.outputs.tag }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.LASALSA_HOST  }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Define deploy tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.tag }}" != "latest" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.tag == 'latest'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      DEPLOY_TAG: ${{ needs.build.outputs.deploy_tag }}
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LASALSA_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: GITHUB_TOKEN,GITHUB_ACTOR,DEPLOY_TAG
           script: |
-            cd ~/lasalsa-app/backend
-            # 1. Обновляем структуру (теперь git pull подтянет изменения в папку backend)
-            git pull origin main
-            
-            # 2. Создаем ключи (путь теперь правильный относительно папки backend)
-            mkdir -p ./certs
-            cat <<'EOF' > ./certs/firebase_key.json
-            ${{ secrets.FIREBASE_KEY }}
-            EOF
-
-            # 3. Идем в корень, чтобы запустить docker-compose
             cd ~/lasalsa-app
 
-            # 4. Формируем .env (оставляем в корне)
+            # Логин в registry
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
+            # Генерируем .env
             cat <<'EOF' > .env
             DB_HOST=${{ secrets.DB_HOST }}
             DB_PORT=${{ secrets.DB_PORT }}
@@ -41,11 +82,17 @@ jobs:
             LASALSA_DB_NAME=${{ secrets.LASALSA_DB_NAME }}
             SERVICE_ACCOUNT_KEY_PATH=/app/certs/firebase_key.json
             ORIGINS=${{ secrets.ORIGINS }}
-            LLM_API_KEY=${{ secrets.LLM_API_KEY}}
-            LLM_PROJECT=${{ secrets.LLM_PROJECT}}
-            LLM_PROMPT_ID=${{ secrets.LLM_PROMPT_ID}}
-            LLM_BASE_URL=${{ secrets.LLM_BASE_URL}}
             EOF
 
-            # 5. Пересобираем только бэк и воркер, чтобы не трогать лишний раз фронт/nginx
-            docker compose -f docker-compose.prod.yml up -d --build lasalsa-backend lasalsa-worker
+            # Генерируем firebase ключ
+            mkdir -p ./backend/certs
+            cat <<'EOF' > ./backend/certs/firebase_key.json
+            ${{ secrets.FIREBASE_KEY }}
+            EOF
+
+            # Пулим и деплоим
+            DEPLOY_TAG=$DEPLOY_TAG docker compose -f docker-compose.prod.yml pull lasalsa-backend lasalsa-worker
+            DEPLOY_TAG=$DEPLOY_TAG docker compose -f docker-compose.prod.yml up -d --wait lasalsa-backend lasalsa-worker
+
+            # Чистим старые образы
+            docker image prune -f

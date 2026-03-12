@@ -64,6 +64,10 @@ jobs:
           DB_NAME: test_db
           CELERY_BROKER_URL: redis://127.0.0.1:6379/0
           CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/0
+          LLM_API_KEY: test-llm-api
+          LLM_PROJECT: test-llm-project
+          LLM_PROMPT_ID: test-llm-prompt
+          LLM_BASE_URL: https://ai.llm.net/v1
         run: |
           sleep 5
           pytest

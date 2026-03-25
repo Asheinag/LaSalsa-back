@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -80,11 +81,11 @@ async def get_tasks_by_offset(
     user_uid: str,
     offset: int = 0,
     limit: int = 100,
-    active_only: bool = False,
+    is_active: bool = True,
 ) -> Sequence[Task]:
     """Retrieve tasks for a user with pagination."""
 
-    if active_only:
+    if is_active:
         result = await db.execute(
             select(Task)
             .where(
@@ -97,9 +98,14 @@ async def get_tasks_by_offset(
         return result.scalars().all()
     else:
         result = await db.execute(
-            select(Task).where(Task.owner_uid == user_uid).offset(offset).limit(limit)
+            select(Task)
+            .where(
+                Task.owner_uid == user_uid,
+                Task.status == TaskStatus.DONE.value,
+            )
+            .offset(offset)
+            .limit(limit)
         )
-
         return result.scalars().all()
 
 
@@ -186,24 +192,29 @@ async def _update_task_simple_fields(task: Task, task_data: TaskUpdate) -> None:
         task.name = task_data.name
     if task_data.description is not None:
         task.description = task_data.description
-    if task_data.planned_at is not None:
-        task.planned_at = task_data.planned_at
     if task_data.closed_at is not None:
         task.closed_at = task_data.closed_at
+    if "planned_at" in task_data.model_fields_set:
+        task.planned_at = task_data.planned_at  # None или значение — оба варианта пишем
+    elif task_data.planned_at is not None:
+        task.planned_at = task_data.planned_at
 
 
 async def _update_task_complex_fields(
     db: AsyncSession, task: Task, task_data: TaskUpdate, user_uid: str
 ) -> None:
     """Update complex task fields that require DB lookups."""
-    if task_data.project_id is not None:
-        project = await get_project_by_id(db, task_data.project_id, user_uid)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Project {task_data.project_id} not found, cannot assign task to it.",
-            )
-        task.project_id = project.id
+    if "project_id" in task_data.model_fields_set:
+        if task_data.project_id is None:
+            task.project_id = None  # отвязать от проекта
+        else:
+            project = await get_project_by_id(db, task_data.project_id, user_uid)
+            if not project:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Project {task_data.project_id} not found, cannot assign task to it.",
+                )
+            task.project_id = project.id
 
     if task_data.pomodoro_id is not None:
         pomodoro = await get_pomodoro(db, task_data.pomodoro_id, user_uid)
@@ -288,15 +299,20 @@ async def get_task_children(
 
 
 async def get_tasks_today(
-    db: AsyncSession, user_uid: str, offset: int = 0, limit: int = 100
+    db: AsyncSession, user_uid: str, timezone: str = "UTC", offset: int = 0, limit: int = 100
 ) -> Sequence[Task]:
-    today = datetime.now().date()
+    now = datetime.now(ZoneInfo(timezone))
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    print(f"Получаем задачи на сегодня для user_uid={user_uid} с offset={offset} и limit={limit}")
+    print(f"Текущая дата: {now}, начало дня: {start}, конец дня: {end}")
     result = await db.execute(
         select(Task)
         .where(
             Task.planned_at != None,  # noqa: E711
-            Task.planned_at >= datetime.combine(today, datetime.min.time()),
-            Task.planned_at <= datetime.combine(today, datetime.max.time()),
+            Task.planned_at >= start,
+            Task.planned_at <= end,
             Task.owner_uid == user_uid,
         )
         .offset(offset)

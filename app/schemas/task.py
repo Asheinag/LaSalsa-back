@@ -102,19 +102,12 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = Field(
         None, title="Task Description", description="Description of the task"
     )
-    planned_at: Optional[datetime] = Field(
-        None, title="Planned At", description="Planned date and time for the task"
-    )
+
     closed_at: Optional[datetime] = Field(
         None, title="Closed At", description="Closed date and time for the task"
     )
     status: Optional[TaskStatus] = Field(
         None, title="Task Status", description="Current status of the task"
-    )
-    project_id: Optional[int] = Field(
-        None,
-        title="Project ID",
-        description="ID of the project associated with the task",
     )
     parent_id: Optional[int] = Field(
         None,
@@ -125,5 +118,14 @@ class TaskUpdate(BaseModel):
         None,
         title="Pomodoro ID",
         description="ID of the pomodoro associated with the task",
+    )
+    # поля которые можно обнулить через null (используем model_fields_set)
+    project_id: Optional[int] = Field(
+        None,
+        title="Project ID",
+        description="ID of the project associated with the task",
+    )
+    planned_at: Optional[datetime] = Field(
+        None, title="Planned At", description="Planned date and time for the task"
     )
     model_config = ConfigDict(from_attributes=True)

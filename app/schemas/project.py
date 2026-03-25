@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from app.common import ProjectStatus, ProjectType
 
 
-# This is a Pydantic model for the Project schema
+# Это базовая модель проекта, которая включает только общие поля, которые могут быть полезны для отображения списка проектов
 class ProjectBase(BaseModel):
     name: str = Field(..., title="Project Name", description="Name of the project")
     id: int = Field(
@@ -25,7 +25,7 @@ class ProjectBase(BaseModel):
     )
 
 
-# This is a Pydantic model for the Project schema used for creating new projects - same as ProjectBase
+# Это модель для создания проекта, которая включает только необходимые поля для создания
 class ProjectCreate(BaseModel):
     name: str = Field(..., title="Project Name", description="Name of the project")
     status: ProjectStatus = Field(
@@ -47,7 +47,7 @@ class ProjectCreate(BaseModel):
     )
 
 
-# This is a Pydantic model for reading project data, which includes additional fields like id and created_at
+# Это модель для отображения проекта, которая включает все поля, включая те, которые не нужны при создании
 class ProjectRead(ProjectBase):
     description: Optional[str] = Field(
         None, title="Project Description", description="Description of the project"
@@ -72,7 +72,7 @@ class ProjectRead(ProjectBase):
     )
 
 
-# This is a Pydantic model for updating project data, same as ProjectCreate, but all of fields is Optional
+# Это модель для обновления проекта, которая позволяет обновлять только определенные поля
 class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(
         None, title="Project Name", description="Name of the project"
@@ -92,3 +92,10 @@ class ProjectUpdate(BaseModel):
     color_id: Optional[int] = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
+
+
+# Это модель для отображения статистики проекта
+class ProjectStats(BaseModel):
+    total: int = Field(..., title="Total Tasks", description="Total number of tasks in the project")
+    completed: int = Field(..., title="Completed Tasks", description="Number of completed tasks in the project")
+    active: int = Field(..., title="Active Tasks", description="Number of active tasks in the project")

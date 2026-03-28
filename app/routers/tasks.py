@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.celery_app import get_celery_task_status
@@ -81,6 +81,7 @@ async def get_tasks_today_endpoint(
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+    timezone: str = Query(default="UTC", description="User timezone, e.g. Asia/Yekaterinburg"),
 ) -> list[TaskShort]:
     """
     Получение задач на сегодня с пагинацией
@@ -89,7 +90,7 @@ async def get_tasks_today_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized")
     user_uid = user.get("uid")
     print(f"Получен запрос на получение задач на сегодня с offset={offset} и limit={limit}")
-    tasks = await get_tasks_today(db, user_uid, offset, limit)
+    tasks = await get_tasks_today(db, user_uid, timezone, offset, limit)
     print(f"Найдено задач на сегодня: {len(tasks)}")
     print(f"Задачи на сегодня: {[task.name for task in tasks]}")
     return tasks

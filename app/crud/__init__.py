@@ -21,6 +21,7 @@ from .project import (  # noqa: F401
     delete_project,
     get_project_by_id,
     get_project_by_name,
+    get_project_stats,
     get_projects,
     update_project,
 )

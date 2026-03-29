@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common import ProjectStatus, TaskStatus
 from app.models import Project, Task
 from app.schemas import ProjectCreate, ProjectUpdate
 
@@ -58,14 +59,36 @@ async def get_project_by_name(
 
 
 async def get_projects(
-    db: AsyncSession, user_uid: str, offset: int, limit: int
+    db: AsyncSession,
+    user_uid: str,
+    offset: int = 0,
+    limit: int = 100,
+    is_active: bool = True,
 ) -> Sequence[Project]:
-    result = await db.execute(
-        select(Project)
-        .filter(Project.owner_uid == user_uid)
-        .offset(offset)
-        .limit(limit)
-    )
+    if is_active:
+        result = await db.execute(
+            select(Project)
+            .where(
+                Project.owner_uid == user_uid,
+                Project.status.in_(
+                    [ProjectStatus.ACTIVE.value, ProjectStatus.INACTIVE.value]
+                ),
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+    else:
+        result = await db.execute(
+            select(Project)
+            .where(
+                Project.owner_uid == user_uid,
+                Project.status.in_(
+                    [ProjectStatus.CANCELLED.value, ProjectStatus.COMPLETED.value]
+                ),
+            )
+            .offset(offset)
+            .limit(limit)
+        )
     return result.scalars().all()
 
 
@@ -107,3 +130,29 @@ async def delete_project(
     await db.delete(project)
     await db.commit()
     return project
+
+
+async def get_project_stats(
+    db: AsyncSession, project_id: int, user_uid: str
+) -> dict[str, int] | None:
+    project = await get_project_by_id(db, project_id, user_uid)
+    if not project:
+        return None
+
+    total_tasks = await db.execute(select(Task).where(Task.project_id == project_id))
+    total_tasks = total_tasks.scalars().all()
+    total_tasks_count = len(total_tasks)
+
+    completed_tasks_count = len(
+        [task for task in total_tasks if task.status == TaskStatus.DONE.value]
+    )
+
+    active_tasks_count = len(
+        [task for task in total_tasks if task.status == TaskStatus.TODO.value]
+    )
+
+    return {
+        "total": total_tasks_count,
+        "completed": completed_tasks_count,
+        "active": active_tasks_count,
+    }

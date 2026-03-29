@@ -96,6 +96,14 @@ class ProjectUpdate(BaseModel):
 
 # Это модель для отображения статистики проекта
 class ProjectStats(BaseModel):
-    total: int = Field(..., title="Total Tasks", description="Total number of tasks in the project")
-    completed: int = Field(..., title="Completed Tasks", description="Number of completed tasks in the project")
-    active: int = Field(..., title="Active Tasks", description="Number of active tasks in the project")
+    total: int = Field(
+        ..., title="Total Tasks", description="Total number of tasks in the project"
+    )
+    completed: int = Field(
+        ...,
+        title="Completed Tasks",
+        description="Number of completed tasks in the project",
+    )
+    active: int = Field(
+        ..., title="Active Tasks", description="Number of active tasks in the project"
+    )

@@ -37,7 +37,9 @@ async def get_projects_endpoint(
     """
     Get a list of projects.
     """
-    print(f"Получен запрос на получение проектов с offset={offset} и limit={limit}, is_active={is_active}")
+    print(
+        f"Получен запрос на получение проектов с offset={offset} и limit={limit}, is_active={is_active}"
+    )
     user_uid = user.get("uid")
     projects = await get_projects(db, user_uid, offset, limit, is_active)
     return projects

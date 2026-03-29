@@ -139,9 +139,7 @@ async def get_project_stats(
     if not project:
         return None
 
-    total_tasks = await db.execute(
-        select(Task).where(Task.project_id == project_id)
-    )
+    total_tasks = await db.execute(select(Task).where(Task.project_id == project_id))
     total_tasks = total_tasks.scalars().all()
     total_tasks_count = len(total_tasks)
 

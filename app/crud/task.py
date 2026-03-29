@@ -299,13 +299,19 @@ async def get_task_children(
 
 
 async def get_tasks_today(
-    db: AsyncSession, user_uid: str, timezone: str = "UTC", offset: int = 0, limit: int = 100
+    db: AsyncSession,
+    user_uid: str,
+    timezone: str = "UTC",
+    offset: int = 0,
+    limit: int = 100,
 ) -> Sequence[Task]:
     now = datetime.now(ZoneInfo(timezone))
     start = now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
     end = now.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
 
-    print(f"Получаем задачи на сегодня для user_uid={user_uid} с offset={offset} и limit={limit}")
+    print(
+        f"Получаем задачи на сегодня для user_uid={user_uid} с offset={offset} и limit={limit}"
+    )
     print(f"Текущая дата: {now}, начало дня: {start}, конец дня: {end}")
     result = await db.execute(
         select(Task)

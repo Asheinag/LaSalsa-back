@@ -7,6 +7,7 @@ from app.crud import (
     create_project,
     delete_project,
     get_project_by_id,
+    get_project_stats,
     get_projects,
     get_tasks_by_project_id,
     update_project,
@@ -17,6 +18,7 @@ from app.schemas import (
     ProjectBase,
     ProjectCreate,
     ProjectRead,
+    ProjectStats,
     ProjectUpdate,
     TaskShort,
 )
@@ -30,12 +32,16 @@ async def get_projects_endpoint(
     limit: int = 100,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),
+    is_active: bool = True,
 ) -> list[ProjectBase]:  # noqa: B008
     """
     Get a list of projects.
     """
+    print(
+        f"Получен запрос на получение проектов с offset={offset} и limit={limit}, is_active={is_active}"
+    )
     user_uid = user.get("uid")
-    projects = await get_projects(db, user_uid, offset, limit)
+    projects = await get_projects(db, user_uid, offset, limit, is_active)
     return projects
 
 
@@ -70,6 +76,23 @@ async def get_project_by_id_endpoint(
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
+
+
+@router.get("/{project_id}/stats", response_model=ProjectStats)
+async def get_project_stats_endpoint(
+    project_id: int,
+    db: AsyncSession = Depends(get_async_session),
+    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
+) -> ProjectStats:
+    """
+    Get statistics for a project by its ID.
+    """
+    user_uid = user.get("uid")
+    stats = await get_project_stats(db, project_id, user_uid)
+    if not stats:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return stats
 
 
 @router.post("/", response_model=ProjectRead, status_code=201)

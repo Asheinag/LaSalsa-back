@@ -10,6 +10,7 @@ from .project import (
     ProjectStats,
     ProjectUpdate,
 )
+from .recurring_task import RecurringTaskCreate, RecurringTaskRead, RecurringTaskUpdate
 from .task import TaskCreate, TaskID, TaskRead, TaskShort, TaskStatusUpdate, TaskUpdate
 
 __all__ = [
@@ -29,4 +30,7 @@ __all__ = [
     "PomodoroUpdate",
     "AIReviewRead",
     "AIReviewShort",
+    "RecurringTaskCreate",
+    "RecurringTaskRead",
+    "RecurringTaskUpdate",
 ]

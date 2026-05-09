@@ -53,7 +53,7 @@ async def test_create_task_without_user_session(
         },
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
 
 
@@ -116,7 +116,7 @@ async def test_get_tasks_without_user_session(unauthenticated_client: AsyncClien
     """
     response = await unauthenticated_client.get("/tasks/")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
 
 

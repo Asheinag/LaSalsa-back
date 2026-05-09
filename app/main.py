@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import ORIGINS
 from app.firebase_config import initialize_firebase
 from app.logging_config import configure_logging
-from app.routers import ai_reviews, pomodoros, projects, tasks
+from app.routers import ai_reviews, pomodoros, projects, recurring_tasks, tasks
 
 configure_logging()
 
@@ -32,6 +32,7 @@ app.include_router(tasks.router)
 app.include_router(projects.router)
 app.include_router(pomodoros.router)
 app.include_router(ai_reviews.router)
+app.include_router(recurring_tasks.router)
 
 
 @app.get("/")

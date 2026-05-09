@@ -1,7 +1,6 @@
 import json
 import os
-from collections.abc import Coroutine
-from typing import Callable
+from collections.abc import Callable, Coroutine
 
 import pytest
 from dotenv import load_dotenv
@@ -14,7 +13,7 @@ from app.celery_app import celery_app
 from app.database import Base, get_async_session
 from app.dependencies import verify_firebase_token
 from app.main import app
-from app.models.ai_review import AIReview
+from app.models import AIReview, RecurringFrequency
 
 # Загружаем .env.test только если мы НЕ в CI
 if not os.getenv("CI"):
@@ -290,3 +289,25 @@ def create_project_review_factory(db_session):
         return review
 
     return _create_project_review
+
+@pytest.fixture
+def create_recurring_task_factory(client: AsyncClient) -> Callable[..., Coroutine]:
+    """
+    Фикстура-фабрика для создания задачи.
+    Возвращает саму асинхронную функцию.
+    """
+
+    # Функция для создания задачи
+    async def _create_recurring_task_factory(recurring_task_data=None):
+        if recurring_task_data is None:
+            recurring_task_data = {
+                "name": "Test Recurring Task",
+                "description": "Created via test",
+                "frequency": RecurringFrequency.DAILY,
+                "days": [],
+                "timezone": "UTC",
+                "task_id": 1,
+            }
+        return await client.post("/recurring_tasks/", json=recurring_task_data)
+
+    return _create_recurring_task_factory

@@ -113,7 +113,7 @@ async def test_create_pomodoro_without_user_session(
     )
 
     # Проверяем ответ
-    assert response.status_code == 403  # Ожидаем ошибку аутентификации
+    assert response.status_code == 401  # Ожидаем ошибку аутентификации
 
 
 @pytest.mark.asyncio

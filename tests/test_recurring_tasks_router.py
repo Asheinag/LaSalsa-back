@@ -27,3 +27,4 @@ async def test_create_task(
     assert data["next_run_at"] is not None
     assert data["last_run_at"] is None
     assert data["is_active"] is True
+

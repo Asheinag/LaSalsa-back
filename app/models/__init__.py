@@ -4,4 +4,11 @@ from .project import Project
 from .recurring_task import RecurringFrequency, RecurringTask
 from .task import Task
 
-__all__ = ["Task", "Project", "Pomodoro", "AIReview", "RecurringTask", "RecurringFrequency"]
+__all__ = [
+    "Task",
+    "Project",
+    "Pomodoro",
+    "AIReview",
+    "RecurringTask",
+    "RecurringFrequency",
+]

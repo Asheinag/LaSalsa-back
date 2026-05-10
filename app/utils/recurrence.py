@@ -47,13 +47,16 @@ def calculate_next_run(
                 month -= 12
                 year += 1
             # дедуплицируем после clamp
-            clamped_days = sorted(set(
-                clamp_day_to_month(d, year, month) for d in days
-            ))
+            clamped_days = sorted(set(clamp_day_to_month(d, year, month) for d in days))
             for day in clamped_days:
                 candidate = now_local.replace(
-                    year=year, month=month, day=day,
-                    hour=RUN_HOUR, minute=RUN_MINUTE, second=0, microsecond=0
+                    year=year,
+                    month=month,
+                    day=day,
+                    hour=RUN_HOUR,
+                    minute=RUN_MINUTE,
+                    second=0,
+                    microsecond=0,
                 )
                 if candidate > now_local:
                     next_local = candidate

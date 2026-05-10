@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +28,7 @@ async def create_pomodoro(
 
 async def get_pomodoro(
     db: AsyncSession, pomodoro_id: int, user_uid: int
-) -> Optional[Pomodoro]:
+) -> Pomodoro | None:
     result = await db.get(Pomodoro, pomodoro_id)
     if not result or not validate_owner(user_uid, result):
         return None
@@ -57,7 +56,7 @@ async def delete_pomodoro(db: AsyncSession, pomodoro_id: int, user_uid: int) -> 
 
 async def update_pomodoro(
     db: AsyncSession, pomodoro_id: int, pomodoro_update: PomodoroUpdate, user_uid: str
-) -> Optional[Pomodoro]:
+) -> Pomodoro | None:
     result = await db.get(Pomodoro, pomodoro_id)
     if not result or not validate_owner(user_uid, result):
         return None

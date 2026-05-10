@@ -2,7 +2,6 @@ from typing import Any
 
 from celery import Celery
 from celery.result import AsyncResult
-from celery.schedules import crontab
 
 from app.config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from app.logging_config import configure_logging
@@ -21,7 +20,7 @@ celery_app.conf.task_routes = {
     "app.tasks.build_task_chain": {"queue": "task_chains"},
     "app.tasks.make_ai_task_review": {"queue": "ai_reviews"},
     "app.tasks.make_ai_project_review": {"queue": "ai_reviews"},
-    "app.tasks.recurring_task": {"queue": "recurring"}
+    "app.tasks.recurring_task": {"queue": "recurring"},
 }
 
 # import app.crud  # noqa: E402, F401
@@ -46,6 +45,7 @@ def get_celery_task_status(celery_task_id: str) -> dict[str, Any]:  # noqa: B008
         return {"status": "error", "reason": str(result.result)}
     else:
         return {"status": result.state}
+
 
 celery_app.conf.beat_schedule = {
     "process-recurring-tasks": {

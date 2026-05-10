@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -21,44 +22,109 @@ async def create_recurring_task(
         from_dt=datetime.now(UTC),
     )
     db_recurring_task = RecurringTask(
-        **recurring_task.model_dump(),
-        owner_uid=user_uid,
-        next_run_at=next_run_at
+        **recurring_task.model_dump(), owner_uid=user_uid, next_run_at=next_run_at
     )
     db.add(db_recurring_task)
     await db.commit()
     await db.refresh(db_recurring_task)
     return db_recurring_task
 
-async def get_recurring_task(db: AsyncSession, recurring_task_id: int) -> RecurringTask:
-    return await db.get(RecurringTask, recurring_task_id)
 
-async def get_recurring_tasks(db: AsyncSession, user_uid: str) -> list[RecurringTask]:
-    return await db.execute(select(RecurringTask).where(RecurringTask.owner_uid == user_uid)).scalars().all()
+async def get_recurring_task(
+    db: AsyncSession, recurring_task_id: int, user_uid: str
+) -> RecurringTask:
+    result = await db.get(RecurringTask, recurring_task_id)
+    if not result:
+        return None
+    if result.owner_uid != user_uid:
+        return None
+    return result
+
+
+async def get_recurring_tasks(
+    db: AsyncSession, user_uid: str
+) -> Sequence[RecurringTask]:
+    result = await db.execute(
+        select(RecurringTask).where(RecurringTask.owner_uid == user_uid)
+    )
+    return result.scalars().all()
+
 
 async def update_recurring_task(
-    db: AsyncSession, recurring_task_id: int, recurring_task: RecurringTaskUpdate
+    db: AsyncSession,
+    recurring_task_id: int,
+    recurring_task: RecurringTaskUpdate,
+    user_uid: str,
 ) -> RecurringTask:
-    db_recurring_task = await get_recurring_task(db, recurring_task_id)
+    db_recurring_task = await get_recurring_task(db, recurring_task_id, user_uid)
+    if db_recurring_task.owner_uid != user_uid:
+        return None
+    need_calculate_next_run = False
     if not db_recurring_task:
-        raise Exception("Recurring task not found")
-    for key, value in recurring_task.model_dump().items():
-        setattr(db_recurring_task, key, value)
+        return None
+    if recurring_task.name:
+        db_recurring_task.name = recurring_task.name
+    if recurring_task.description:
+        db_recurring_task.description = recurring_task.description
+    if recurring_task.project_id:
+        db_recurring_task.project_id = recurring_task.project_id
+    if recurring_task.frequency:
+        db_recurring_task.frequency = recurring_task.frequency
+        need_calculate_next_run = True
+    if recurring_task.days:
+        db_recurring_task.days = recurring_task.days
+        need_calculate_next_run = True
+    if recurring_task.timezone:
+        db_recurring_task.timezone = recurring_task.timezone
+        need_calculate_next_run = True
+    if need_calculate_next_run:
+        db_recurring_task.next_run_at = calculate_next_run(
+            db_recurring_task.frequency,
+            db_recurring_task.days,
+            db_recurring_task.timezone,
+            from_dt=datetime.now(UTC),
+        )
+
     await db.commit()
     return db_recurring_task
 
-async def delete_recurring_task(db: AsyncSession, recurring_task_id: int) -> None:
-    db_recurring_task = await get_recurring_task(db, recurring_task_id)
+
+async def delete_recurring_task(
+    db: AsyncSession, recurring_task_id: int, user_uid: str
+) -> None:
+    db_recurring_task = await get_recurring_task(db, recurring_task_id, user_uid)
     if not db_recurring_task:
-        raise Exception("Recurring task not found")
+        return None
+    if db_recurring_task.owner_uid != user_uid:
+        return None
     await db.delete(db_recurring_task)
     await db.commit()
 
-async def get_due_recurring_tasks(db: AsyncSession) -> list[RecurringTask]:
-    return await db.execute(select(RecurringTask).where(RecurringTask.is_active, RecurringTask.next_run_at < datetime.now(UTC))).scalars().all()
 
-async def get_recurring_task_by_task_id(db: AsyncSession, task_id: int) -> RecurringTask:
-    return await db.get(RecurringTask, task_id)
+async def get_due_recurring_tasks(db: AsyncSession) -> list[RecurringTask]:
+    return (
+        await db.execute(
+            select(RecurringTask).where(
+                RecurringTask.is_active, RecurringTask.next_run_at < datetime.now(UTC)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def get_recurring_task_by_task_id(
+    db: AsyncSession, task_id: int, user_uid: str
+) -> Sequence[RecurringTask]:
+    result = await db.execute(
+        select(RecurringTask).where(
+            RecurringTask.task_id == task_id, RecurringTask.owner_uid == user_uid
+        )
+    )
+    if not result:
+        return None
+    return result.scalars().all()
+
 
 @celery_app.task(name="app.tasks.process_recurring_tasks")
 def process_recurring_tasks() -> None:

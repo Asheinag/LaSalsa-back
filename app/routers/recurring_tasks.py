@@ -64,8 +64,8 @@ async def get_recurring_task_endpoint(
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    user_uid = user.get("uid")
-    recurring_task = await get_recurring_task(db, recurring_task_id, user_uid)
+
+    recurring_task = await get_recurring_task(db, recurring_task_id, user.get("uid"))
     if not recurring_task:
         raise HTTPException(status_code=404, detail="Recurring task not found")
     return recurring_task
@@ -112,7 +112,7 @@ async def delete_recurring_task_endpoint(
     return deleted_recurring_task
 
 
-@router.get("`/by-task/{task_id}", response_model=RecurringTaskRead)
+@router.get("/by-task/{task_id}", response_model=list[RecurringTaskRead])
 async def get_recurring_task_by_task_endpoint(
     task_id: int,
     db: AsyncSession = Depends(get_async_session),

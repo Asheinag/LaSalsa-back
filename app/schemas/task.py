@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -12,31 +11,31 @@ class TaskBase(BaseModel):
     description: str = Field(
         ..., title="Task Description", description="Description of the task"
     )
-    planned_at: Optional[datetime] = Field(
+    planned_at: datetime | None = Field(
         None, title="Planned At", description="Planned date and time for the task"
     )
-    closed_at: Optional[datetime] = Field(
+    closed_at: datetime | None = Field(
         None, title="Closed At", description="Closed date and time for the task"
     )
     status: TaskStatus = Field(
         TaskStatus.TODO, title="Task Status", description="Current status of the task"
     )
-    project_id: Optional[int] = Field(
+    project_id: int | None = Field(
         None,
         title="Project ID",
         description="ID of the project associated with the task",
     )
-    project_name: Optional[str] = Field(
+    project_name: str | None = Field(
         None,
         title="Project Name",
         description="Name of the project associated with the task",
     )
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None,
         title="Parent Task ID",
         description="ID of the parent task if this is a subtask",
     )
-    pomodoro_id: Optional[int] = Field(
+    pomodoro_id: int | None = Field(
         None,
         title="Pomodoro ID",
         description="ID of the pomodoro associated with the task",
@@ -56,13 +55,13 @@ class TaskShort(BaseModel):
     status: TaskStatus = Field(
         ..., title="Task Status", description="Current status of the task"
     )
-    planned_at: Optional[datetime] = Field(
+    planned_at: datetime | None = Field(
         None, title="Planned At", description="Planned date and time for the task"
     )
-    closed_at: Optional[datetime] = Field(
+    closed_at: datetime | None = Field(
         None, title="Closed At", description="Closed date and time for the task"
     )
-    project_id: Optional[int] = Field(
+    project_id: int | None = Field(
         None,
         title="Project ID",
         description="ID of the project associated with the task",
@@ -98,34 +97,34 @@ class TaskID(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    name: Optional[str] = Field(None, title="Task Name", description="Name of the task")
-    description: Optional[str] = Field(
+    name: str | None = Field(None, title="Task Name", description="Name of the task")
+    description: str | None = Field(
         None, title="Task Description", description="Description of the task"
     )
 
-    closed_at: Optional[datetime] = Field(
+    closed_at: datetime | None = Field(
         None, title="Closed At", description="Closed date and time for the task"
     )
-    status: Optional[TaskStatus] = Field(
+    status: TaskStatus | None = Field(
         None, title="Task Status", description="Current status of the task"
     )
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None,
         title="Parent Task ID",
         description="ID of the parent task if this is a subtask",
     )
-    pomodoro_id: Optional[int] = Field(
+    pomodoro_id: int | None = Field(
         None,
         title="Pomodoro ID",
         description="ID of the pomodoro associated with the task",
     )
     # поля которые можно обнулить через null (используем model_fields_set)
-    project_id: Optional[int] = Field(
+    project_id: int | None = Field(
         None,
         title="Project ID",
         description="ID of the project associated with the task",
     )
-    planned_at: Optional[datetime] = Field(
+    planned_at: datetime | None = Field(
         None, title="Planned At", description="Planned date and time for the task"
     )
     model_config = ConfigDict(from_attributes=True)

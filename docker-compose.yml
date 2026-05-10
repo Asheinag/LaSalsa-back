@@ -46,7 +46,29 @@ services:
       - DB_PORT=5432
     volumes:
       - .:/app
-    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains,ai_reviews", "--pool=solo", "--loglevel=info"]
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains,ai_reviews,recurring", "--pool=solo", "--loglevel=info"]
+
+  dev-lasalsa-beat:  # новый сервис
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      dev-redis:
+        condition: service_healthy
+      dev-db:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://dev-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://dev-redis:6379/0
+      - DB_HOST=dev-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=dev_db
+      - DB_PORT=5432
+    volumes:
+      - .:/app
+    command: ["celery", "-A", "app.celery_app.celery_app", "beat", "--loglevel=info"]
+
 
   dev-backend:
     build:
@@ -148,7 +170,28 @@ services:
       - DB_NAME=test_db
     volumes:
       - .:/app
-    command: celery -A app.celery_app worker --loglevel=info
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "-Q", "task_chains,ai_reviews,recurring", "--pool=solo", "--loglevel=info"]
+  
+  test-lasalsa-beat:  # новый сервис
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      test-redis:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://test-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://test-redis:6379/0
+      - DB_HOST=test-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=test_db
+    volumes:
+      - .:/app
+    command: ["celery", "-A", "app.celery_app.celery_app", "beat", "--loglevel=info"]
+
 
 volumes:
   dev_pgdata:

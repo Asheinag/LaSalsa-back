@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,7 +19,7 @@ class ProjectBase(BaseModel):
     owner_uid: str = Field(
         ..., title="Owner UID", description="Unique identifier for the project owner"
     )
-    color_id: Optional[int] = Field(
+    color_id: int | None = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
 
@@ -36,60 +35,60 @@ class ProjectCreate(BaseModel):
     type: ProjectType = Field(
         ProjectType.LIST, title="Project Type", description="Type of the project"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, title="Project Description", description="Description of the project"
     )
-    deadline: Optional[datetime] = Field(
+    deadline: datetime | None = Field(
         None, title="Deadline", description="Deadline for the project"
     )
-    color_id: Optional[int] = Field(
+    color_id: int | None = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
 
 
 # Это модель для отображения проекта, которая включает все поля, включая те, которые не нужны при создании
 class ProjectRead(ProjectBase):
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, title="Project Description", description="Description of the project"
     )
     created_at: datetime = Field(
         ..., title="Created At", description="Timestamp when the project was created"
     )
-    deadline: Optional[datetime] = Field(
+    deadline: datetime | None = Field(
         None, title="Deadline", description="Deadline for the project"
     )
     type: ProjectType = Field(
         ProjectType.LIST, title="Project Type", description="Type of the project"
     )
-    color_id: Optional[int] = Field(
+    color_id: int | None = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         None, title="Updated At", description="Timestamp when the project was updated"
     )
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None, title="Parent ID", description="ID of the parent project"
     )
 
 
 # Это модель для обновления проекта, которая позволяет обновлять только определенные поля
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None, title="Project Name", description="Name of the project"
     )
-    status: Optional[ProjectStatus] = Field(
+    status: ProjectStatus | None = Field(
         None, title="Project Status", description="Current status of the project"
     )
-    type: Optional[ProjectType] = Field(
+    type: ProjectType | None = Field(
         None, title="Project Type", description="Type of the project"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, title="Project Description", description="Description of the project"
     )
-    deadline: Optional[datetime] = Field(
+    deadline: datetime | None = Field(
         None, title="Deadline", description="Deadline for the project"
     )
-    color_id: Optional[int] = Field(
+    color_id: int | None = Field(
         None, title="Color ID", description="Color identifier for the project"
     )
 

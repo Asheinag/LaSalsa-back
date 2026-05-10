@@ -5,6 +5,7 @@ ignore = [
     "E501",   # line too long
     "COM812", # Trailing comma missing (отключаем везде)
     "ISC001", # Implicit string concatenation (рекомендация для форматтера)
+    "UP042",  # Implicit string concatenation (рекомендация для форматтера)
 ]
 
 [lint.per-file-ignores]

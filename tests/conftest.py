@@ -290,6 +290,7 @@ def create_project_review_factory(db_session):
 
     return _create_project_review
 
+
 @pytest.fixture
 def create_recurring_task_factory(client: AsyncClient) -> Callable[..., Coroutine]:
     """

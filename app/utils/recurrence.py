@@ -6,6 +6,20 @@ RUN_HOUR = 9
 RUN_MINUTE = 0
 
 
+def normalize_frequency(frequency: str, days: list[int]) -> tuple[str, list[int]]:
+    if frequency == "interval" and days == [1]:
+        return "daily", []
+
+    if frequency == "weekly" and set(days) == {0, 1, 2, 3, 4, 5, 6}:
+        return "daily", []
+
+    if frequency == "monthly" and len(days) >= 28:
+        # все дни месяца — считаем как ежедневно
+        return "daily", []
+
+    return frequency, days
+
+
 def clamp_day_to_month(day: int, year: int, month: int) -> int:
     max_day = calendar.monthrange(year, month)[1]
     return min(day, max_day)

@@ -3,7 +3,7 @@ from httpx import AsyncClient
 
 from app.models import RecurringFrequency
 
-REC_ROUTE = "/recurring_tasks"
+REC_ROUTE = "/recurring-tasks"
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ async def test_get_rec_tasks(
     }
     await create_recurring_task_factory(recurring_task_data1)
     await create_recurring_task_factory(recurring_task_data2)
-    response = await client.get("/recurring_tasks/")
+    response = await client.get("/recurring-tasks/")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2

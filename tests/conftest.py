@@ -309,6 +309,6 @@ def create_recurring_task_factory(client: AsyncClient) -> Callable[..., Coroutin
                 "timezone": "UTC",
                 "task_id": 1,
             }
-        return await client.post("/recurring_tasks/", json=recurring_task_data)
+        return await client.post("/recurring-tasks/", json=recurring_task_data)
 
     return _create_recurring_task_factory

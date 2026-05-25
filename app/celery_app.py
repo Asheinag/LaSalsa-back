@@ -50,7 +50,7 @@ def get_celery_task_status(celery_task_id: str) -> dict[str, Any]:  # noqa: B008
 celery_app.conf.beat_schedule = {
     "process-recurring-tasks": {
         "task": "app.tasks.process_recurring_tasks",
-        "schedule": 900,  # каждые 15 минут
+        "schedule": 30,  # каждые 15 минут
         "options": {"queue": "recurring"},
     },
 }

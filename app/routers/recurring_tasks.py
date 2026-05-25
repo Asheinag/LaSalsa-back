@@ -15,7 +15,7 @@ from app.database import get_async_session
 from app.dependencies import verify_firebase_token
 from app.schemas import RecurringTaskCreate, RecurringTaskRead, RecurringTaskUpdate
 
-router = APIRouter(prefix="/recurring_tasks", tags=["recurring_tasks"])
+router = APIRouter(prefix="/recurring-tasks", tags=["recurring_tasks"])
 
 
 @router.post("/", response_model=RecurringTaskRead, status_code=201)

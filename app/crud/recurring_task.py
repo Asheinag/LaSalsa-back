@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
@@ -9,20 +10,27 @@ from app.common import TaskStatus
 from app.database import get_sync_session
 from app.models import RecurringTask, Task
 from app.schemas import RecurringTaskCreate, RecurringTaskUpdate
-from app.utils import calculate_next_run
+from app.utils import calculate_next_run, normalize_frequency
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 async def create_recurring_task(
     db: AsyncSession, recurring_task: RecurringTaskCreate, user_uid: str
 ) -> RecurringTask:
+    frequency, days = normalize_frequency(recurring_task.frequency, recurring_task.days)
     next_run_at = calculate_next_run(
-        recurring_task.frequency,
-        recurring_task.days,
+        frequency,
+        days,
         recurring_task.timezone,
         from_dt=datetime.now(UTC),
     )
+    recurring_task_data = recurring_task.model_dump()
+    recurring_task_data["frequency"] = frequency
+    recurring_task_data["days"] = days
     db_recurring_task = RecurringTask(
-        **recurring_task.model_dump(), owner_uid=user_uid, next_run_at=next_run_at
+        **recurring_task_data, owner_uid=user_uid, next_run_at=next_run_at
     )
     db.add(db_recurring_task)
     await db.commit()
@@ -78,9 +86,12 @@ async def update_recurring_task(
         db_recurring_task.timezone = recurring_task.timezone
         need_calculate_next_run = True
     if need_calculate_next_run:
+        frequency, days = normalize_frequency(
+            db_recurring_task.frequency, db_recurring_task.days
+        )
         db_recurring_task.next_run_at = calculate_next_run(
-            db_recurring_task.frequency,
-            db_recurring_task.days,
+            frequency,
+            days,
             db_recurring_task.timezone,
             from_dt=datetime.now(UTC),
         )
@@ -102,15 +113,12 @@ async def delete_recurring_task(
 
 
 async def get_due_recurring_tasks(db: AsyncSession) -> list[RecurringTask]:
-    return (
-        await db.execute(
-            select(RecurringTask).where(
-                RecurringTask.is_active, RecurringTask.next_run_at < datetime.now(UTC)
-            )
+    result = await db.execute(
+        select(RecurringTask).where(
+            RecurringTask.is_active, RecurringTask.next_run_at < datetime.now(UTC)
         )
-        .scalars()
-        .all()
     )
+    return result.scalars().all()
 
 
 async def get_recurring_task_by_task_id(
@@ -132,18 +140,26 @@ def process_recurring_tasks() -> None:
     Запускается каждые 15 минут через Celery beat.
     Создаёт задачи для всех пользователей у которых наступил next_run_at.
     """
+    logger.debug("process_recurring_tasks")
     with get_sync_session() as session:
-        due = get_due_recurring_tasks(session)
+        due = (
+            session.query(RecurringTask)
+            .filter(RecurringTask.next_run_at < datetime.now(UTC))
+            .all()
+        )
+        logger.debug(f"due: {due}")
         for template in due:
             # создать Task по шаблону
+            logger.debug(f"template: {template}")
             task = Task(
                 name=template.name,
                 description=template.description,
                 project_id=template.project_id,
                 owner_uid=template.owner_uid,
                 status=TaskStatus.TODO,
-                recurring_task_id=template.id,  # помечаем что задача создана по шаблону
+                created_at=datetime.now(UTC),
             )
+            logger.debug(f"task: {task}")
             session.add(task)
             # обновить next_run_at и last_run_at
             template.last_run_at = datetime.now(UTC)
@@ -153,4 +169,5 @@ def process_recurring_tasks() -> None:
                 template.timezone,
                 from_dt=datetime.now(UTC),
             )
+            logger.debug(f"template: {template}")
         session.commit()

@@ -24,7 +24,6 @@ class RecurringTaskCreate(BaseModel):
     timezone: str = Field(
         ..., title="Timezone", description="Timezone of the reccuring template"
     )
-    task_id: int = Field(..., title="Task ID", description="ID of the task")
 
 
 class RecurringTaskRead(RecurringTaskCreate):

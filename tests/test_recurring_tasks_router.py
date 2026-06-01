@@ -134,7 +134,6 @@ async def test_patch_rec_task(
         "frequency": RecurringFrequency.DAILY,
         "days": [],
         "timezone": "UTC",
-        "task_id": 1,
     }
     response = await create_recurring_task_factory(recurring_task_data)
 
@@ -144,7 +143,6 @@ async def test_patch_rec_task(
     assert data["frequency"] == "daily"
     assert data["days"] == []
     assert data["timezone"] == "UTC"
-    assert data["task_id"] == 1
 
     await client.patch(f"{REC_ROUTE}/1", json={"name": "Test Recurring Task by Test 2"})
     response = await client.get(f"{REC_ROUTE}/1")
@@ -155,7 +153,6 @@ async def test_patch_rec_task(
     assert data["frequency"] == "daily"
     assert data["days"] == []
     assert data["timezone"] == "UTC"
-    assert data["task_id"] == 1
 
 
 @pytest.mark.asyncio
@@ -173,40 +170,3 @@ async def test_delete_rec_task(
 
     response = await client.get(f"{REC_ROUTE}/1")
     assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_get_rec_task_by_task_id(
-    client: AsyncClient, create_recurring_task_factory, create_task_factory
-):
-    task1 = {
-        "name": "Test Task 1",
-        "description": "Created via test",
-    }
-    await create_task_factory(task1)
-
-    recurring_task_data1 = {
-        "name": "Test Recurring Task by Test",
-        "description": "Created via test",
-        "frequency": RecurringFrequency.DAILY,
-        "days": [],
-        "timezone": "UTC",
-        "task_id": 1,
-    }
-    recurring_task_data2 = {
-        "name": "Test Recurring Task 2 by Test",
-        "description": "Created via test",
-        "frequency": RecurringFrequency.DAILY,
-        "days": [],
-        "timezone": "UTC",
-        "task_id": 1,
-    }
-    await create_recurring_task_factory(recurring_task_data1)
-    await create_recurring_task_factory(recurring_task_data2)
-
-    response = await client.get(f"{REC_ROUTE}/by-task/1")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 2
-    assert data[0]["name"] == "Test Recurring Task by Test"
-    assert data[1]["name"] == "Test Recurring Task 2 by Test"

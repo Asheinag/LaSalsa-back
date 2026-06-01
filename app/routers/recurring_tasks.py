@@ -7,7 +7,6 @@ from app.crud import (
     create_recurring_task,
     delete_recurring_task,
     get_recurring_task,
-    get_recurring_task_by_task_id,
     get_recurring_tasks,
     update_recurring_task,
 )
@@ -110,21 +109,3 @@ async def delete_recurring_task_endpoint(
     if not deleted_recurring_task:
         raise HTTPException(status_code=404, detail="Recurring task not found")
     return deleted_recurring_task
-
-
-@router.get("/by-task/{task_id}", response_model=list[RecurringTaskRead])
-async def get_recurring_task_by_task_endpoint(
-    task_id: int,
-    db: AsyncSession = Depends(get_async_session),
-    user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
-) -> RecurringTaskRead:
-    """
-    Get a recurring task by linked task id
-    """
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    user_uid = user.get("uid")
-    result = await get_recurring_task_by_task_id(db, task_id, user_uid)
-    if not result:
-        raise HTTPException(status_code=404, detail="Recurring task not found")
-    return result

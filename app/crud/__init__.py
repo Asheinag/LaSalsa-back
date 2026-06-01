@@ -30,7 +30,6 @@ from .recurring_task import (  # noqa: F401
     delete_recurring_task,
     get_due_recurring_tasks,
     get_recurring_task,
-    get_recurring_task_by_task_id,
     get_recurring_tasks,
     update_recurring_task,
 )

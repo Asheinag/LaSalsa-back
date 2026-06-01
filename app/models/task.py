@@ -42,3 +42,6 @@ class Task(Base):
     ai_reviews = relationship(
         "AIReview", back_populates="task", cascade="all, delete-orphan"
     )
+    recurring_task_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("recurring_tasks.id"), nullable=True
+    )

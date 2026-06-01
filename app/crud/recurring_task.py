@@ -121,19 +121,6 @@ async def get_due_recurring_tasks(db: AsyncSession) -> list[RecurringTask]:
     return result.scalars().all()
 
 
-async def get_recurring_task_by_task_id(
-    db: AsyncSession, task_id: int, user_uid: str
-) -> Sequence[RecurringTask]:
-    result = await db.execute(
-        select(RecurringTask).where(
-            RecurringTask.task_id == task_id, RecurringTask.owner_uid == user_uid
-        )
-    )
-    if not result:
-        return None
-    return result.scalars().all()
-
-
 @celery_app.task(name="app.tasks.process_recurring_tasks")
 def process_recurring_tasks() -> None:
     """
@@ -157,7 +144,9 @@ def process_recurring_tasks() -> None:
                 project_id=template.project_id,
                 owner_uid=template.owner_uid,
                 status=TaskStatus.TODO,
+                planned_at=template.next_run_at,
                 created_at=datetime.now(UTC),
+                recurring_task_id=template.id,
             )
             logger.debug(f"task: {task}")
             session.add(task)

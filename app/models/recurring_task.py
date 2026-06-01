@@ -26,7 +26,6 @@ class RecurringTask(Base):
     frequency: Mapped[str] = mapped_column(String, nullable=False)
     days: Mapped[list[int]] = mapped_column(JSON, default=list)
     timezone: Mapped[str] = mapped_column(String, default="UTC")
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     next_run_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False

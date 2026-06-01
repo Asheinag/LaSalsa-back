@@ -8,8 +8,8 @@ from app.common import TaskStatus
 # This is a Pydantic model for the Task schema
 class TaskBase(BaseModel):
     name: str = Field(..., title="Task Name", description="Name of the task")
-    description: str = Field(
-        ..., title="Task Description", description="Description of the task"
+    description: str | None = Field(
+        None, title="Task Description", description="Description of the task"
     )
     planned_at: datetime | None = Field(
         None, title="Planned At", description="Planned date and time for the task"

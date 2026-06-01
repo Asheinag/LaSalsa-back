@@ -53,9 +53,6 @@ async def get_tasks_endpoint(
     """
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    print(
-        f"Получен запрос на получение задач с offset={offset} и limit={limit}, is_active={is_active}"
-    )
     user_uid = user.get("uid")
     return await get_tasks_by_offset(db, user_uid, offset, limit, is_active=is_active)
 
@@ -93,9 +90,6 @@ async def get_tasks_today_endpoint(
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     user_uid = user.get("uid")
-    print(
-        f"Получен запрос на получение задач на сегодня с offset={offset} и limit={limit}"
-    )
     tasks = await get_tasks_today(db, user_uid, timezone, offset, limit)
     print(f"Найдено задач на сегодня: {len(tasks)}")
     print(f"Задачи на сегодня: {[task.name for task in tasks]}")

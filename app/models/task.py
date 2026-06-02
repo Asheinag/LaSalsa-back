@@ -43,5 +43,11 @@ class Task(Base):
         "AIReview", back_populates="task", cascade="all, delete-orphan"
     )
     recurring_task_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("recurring_tasks.id"), nullable=True
+        ForeignKey(
+            "recurring_tasks.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_task_recurring",
+        ),
+        nullable=True,
     )

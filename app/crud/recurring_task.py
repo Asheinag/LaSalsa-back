@@ -102,7 +102,7 @@ async def update_recurring_task(
 
 async def delete_recurring_task(
     db: AsyncSession, recurring_task_id: int, user_uid: str
-) -> None:
+) -> str:
     db_recurring_task = await get_recurring_task(db, recurring_task_id, user_uid)
     if not db_recurring_task:
         return None
@@ -110,6 +110,7 @@ async def delete_recurring_task(
         return None
     await db.delete(db_recurring_task)
     await db.commit()
+    return "deleted"
 
 
 async def get_due_recurring_tasks(db: AsyncSession) -> list[RecurringTask]:

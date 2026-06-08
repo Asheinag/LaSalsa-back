@@ -2,7 +2,7 @@
 Роутер-тесты для Tasks: CRUD, авторизация, валидация, иерархия, фильтры.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -296,40 +296,44 @@ async def test_get_tasks_today(client: AsyncClient, create_task_factory):
     """
     Получение задач, запланированных на сегодня, через API
     """
-    today = datetime.now().date()
+    today = datetime.now(UTC).date()
     yesterday = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
+
+    def date_to_utc_str(d):
+    # полночь UTC для этой даты
+        return datetime.combine(d, time.min).replace(tzinfo=UTC).isoformat()
 
     tasks_data = [
         {
             "name": "Task Today 1",
             "description": "Task planned for today",
             "status": "TODO",
-            "planned_at": today.isoformat(),
+            "planned_at": date_to_utc_str(today),
         },
         {
             "name": "Task Today 2",
             "description": "Another task planned for today",
             "status": "TODO",
-            "planned_at": today.isoformat(),
+            "planned_at": date_to_utc_str(today),
         },
         {
             "name": "Task Yesterday",
             "description": "Task planned for yesterday",
             "status": "TODO",
-            "planned_at": yesterday.isoformat(),
+            "planned_at": date_to_utc_str(yesterday),
         },
         {
             "name": "Task Tomorrow",
             "description": "Task planned for tomorrow",
             "status": "TODO",
-            "planned_at": tomorrow.isoformat(),
+            "planned_at": date_to_utc_str(tomorrow),
         },
     ]
     for task_data in tasks_data:
         await create_task_factory(task_data)
 
-    response = await client.get("/tasks/today")
+    response = await client.get("/tasks/today?timezone=UTC")
 
     assert response.status_code == 200
     data = response.json()

@@ -91,12 +91,12 @@ async def update_recurring_task_endpoint(
     return updated_recurring_task
 
 
-@router.delete("/{recurring_task_id}", response_model=RecurringTaskRead)
+@router.delete("/{recurring_task_id}")
 async def delete_recurring_task_endpoint(
     recurring_task_id: int,
     db: AsyncSession = Depends(get_async_session),
     user: dict[str, Any] = Depends(verify_firebase_token),  # noqa: B008
-) -> RecurringTaskRead:
+) -> str:
     """
     Delete a recurring task
     """

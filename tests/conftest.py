@@ -169,7 +169,7 @@ def mock_celery_session(db_session, monkeypatch):
     # Мокаем правильный путь к функции
     monkeypatch.setattr("app.database.get_sync_session", get_test_session)
     # Также мокаем в модуле celery_app, если там импортируется по-другому
-    monkeypatch.setattr("app.celery_app.get_sync_session", get_test_session)
+    monkeypatch.setattr("app.crud.recurring_task.get_sync_session", get_test_session)
 
 
 @pytest.fixture

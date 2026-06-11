@@ -301,7 +301,7 @@ async def test_get_tasks_today(client: AsyncClient, create_task_factory):
     tomorrow = today + timedelta(days=1)
 
     def date_to_utc_str(d):
-    # полночь UTC для этой даты
+        # полночь UTC для этой даты
         return datetime.combine(d, time.min).replace(tzinfo=UTC).isoformat()
 
     tasks_data = [

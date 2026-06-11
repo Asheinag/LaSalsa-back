@@ -11,6 +11,7 @@ from app.models import RecurringFrequency, RecurringTask, Task
 
 REC_ROUTE = "/recurring-tasks"
 
+
 class TestRecurringTask:
     @pytest.mark.asyncio
     async def test_create_rec_task(
@@ -37,7 +38,9 @@ class TestRecurringTask:
         assert data["is_active"] is True
 
     @pytest.mark.asyncio
-    async def test_create_daily_rec_task(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_daily_rec_task(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -64,7 +67,9 @@ class TestRecurringTask:
         assert next_run == expected
 
     @pytest.mark.asyncio
-    async def test_create_interval_rec_task(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_interval_rec_task(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -92,7 +97,9 @@ class TestRecurringTask:
         assert next_run == expected
 
     @pytest.mark.asyncio
-    async def test_create_weekly_rec_task(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_weekly_rec_task(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -122,7 +129,9 @@ class TestRecurringTask:
         assert next_run.minute == 0
 
     @pytest.mark.asyncio
-    async def test_create_monthly_rec_task(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_monthly_rec_task(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -149,7 +158,9 @@ class TestRecurringTask:
         assert next_run.minute == 0
 
     @pytest.mark.asyncio
-    async def test_create_rec_interval_task_normalize(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_rec_interval_task_normalize(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -178,7 +189,9 @@ class TestRecurringTask:
         assert next_run == expected
 
     @pytest.mark.asyncio
-    async def test_create_rec_task_weekly_normalize(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_rec_task_weekly_normalize(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -205,14 +218,47 @@ class TestRecurringTask:
 
         assert next_run == expected
 
-
     @pytest.mark.asyncio
-    async def test_create_monthly_rec_task_normalize(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_monthly_rec_task_normalize(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
             "frequency": RecurringFrequency.MONTHLY,
-            "days": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],
+            "days": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+            ],
             "timezone": "Asia/Yekaterinburg",
         }
         response = await create_recurring_task_factory(recurring_task_data)
@@ -235,7 +281,9 @@ class TestRecurringTask:
         assert next_run == expected
 
     @pytest.mark.asyncio
-    async def test_create_monthly_rec_task_with_last_day(self, client: AsyncClient, create_recurring_task_factory):
+    async def test_create_monthly_rec_task_with_last_day(
+        self, client: AsyncClient, create_recurring_task_factory
+    ):
         recurring_task_data = {
             "name": "Test Recurring Task by Test",
             "description": "Created via test",
@@ -262,7 +310,6 @@ class TestRecurringTask:
         max_day = calendar.monthrange(next_run.year, next_run.month)[1]
         expected_day = min(31, max_day)
         assert next_run.day == expected_day
-
 
     @pytest.mark.asyncio
     async def test_get_rec_tasks(
@@ -300,7 +347,6 @@ class TestRecurringTask:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-
 
     @pytest.mark.asyncio
     async def test_get_rec_task(
@@ -345,12 +391,10 @@ class TestRecurringTask:
         assert data["name"] == "Test Recurring Task by Test"
         assert data["description"] == "Created via test"
 
-
     @pytest.mark.asyncio
     async def test_get_rec_task_not_found(self, client: AsyncClient):
         response = await client.get(f"{REC_ROUTE}/1")
         assert response.status_code == 404
-
 
     @pytest.mark.asyncio
     async def test_patch_rec_task(
@@ -377,7 +421,9 @@ class TestRecurringTask:
         assert data["days"] == []
         assert data["timezone"] == "UTC"
 
-        await client.patch(f"{REC_ROUTE}/1", json={"name": "Test Recurring Task by Test 2"})
+        await client.patch(
+            f"{REC_ROUTE}/1", json={"name": "Test Recurring Task by Test 2"}
+        )
         response = await client.get(f"{REC_ROUTE}/1")
         assert response.status_code == 200
         data = response.json()
@@ -386,7 +432,6 @@ class TestRecurringTask:
         assert data["frequency"] == "daily"
         assert data["days"] == []
         assert data["timezone"] == "UTC"
-
 
     @pytest.mark.asyncio
     async def test_delete_rec_task(
@@ -404,21 +449,26 @@ class TestRecurringTask:
         response = await client.get(f"{REC_ROUTE}/1")
         assert response.status_code == 404
 
-
     @pytest.mark.asyncio
-    async def test_process_recurring_tasks_creates_task(self, client: AsyncClient, db_session, mock_celery_session):
+    async def test_process_recurring_tasks_creates_task(
+        self, client: AsyncClient, db_session, mock_celery_session
+    ):
         # 1. Создать шаблон через API
-        response = await client.post("/recurring-tasks/", json={
-            "name": "Авто задача",
-            "frequency": "daily",
-            "days": [],
-            "timezone": "UTC",
-        })
+        response = await client.post(
+            "/recurring-tasks/",
+            json={
+                "name": "Авто задача",
+                "frequency": "daily",
+                "days": [],
+                "timezone": "UTC",
+            },
+        )
         assert response.status_code == 201
         template_id = response.json()["id"]
 
         # 2. Двигаем next_run_at в прошлое напрямую в БД
         from datetime import UTC, timedelta
+
         template = db_session.scalar(
             select(RecurringTask).where(RecurringTask.id == template_id)
         )
@@ -429,9 +479,9 @@ class TestRecurringTask:
         process_recurring_tasks()
 
         # 4. Проверяем что задача создалась
-        tasks = db_session.query(Task).filter(
-            Task.recurring_task_id == template_id
-        ).all()
+        tasks = (
+            db_session.query(Task).filter(Task.recurring_task_id == template_id).all()
+        )
         assert len(tasks) == 1
         assert tasks[0].name == "Авто задача"
         assert tasks[0].recurring_task_id == template_id

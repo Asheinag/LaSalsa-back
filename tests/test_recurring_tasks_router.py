@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -232,6 +233,36 @@ class TestRecurringTask:
         )
 
         assert next_run == expected
+
+    @pytest.mark.asyncio
+    async def test_create_monthly_rec_task_with_last_day(self, client: AsyncClient, create_recurring_task_factory):
+        recurring_task_data = {
+            "name": "Test Recurring Task by Test",
+            "description": "Created via test",
+            "frequency": RecurringFrequency.MONTHLY,
+            "days": [31],
+            "timezone": "Asia/Yekaterinburg",
+        }
+        response = await create_recurring_task_factory(recurring_task_data)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_active"] is True
+        assert data["frequency"] == "monthly"
+
+        # Проверяем next_run_at
+        tz = ZoneInfo("Asia/Yekaterinburg")
+        next_run = datetime.fromisoformat(data["next_run_at"]).astimezone(tz)
+
+        # время должно быть 09:00
+        assert next_run.hour == 9
+        assert next_run.minute == 0
+
+        # дата в будущем
+        assert next_run > datetime.now(tz)
+        max_day = calendar.monthrange(next_run.year, next_run.month)[1]
+        expected_day = min(31, max_day)
+        assert next_run.day == expected_day
+
 
     @pytest.mark.asyncio
     async def test_get_rec_tasks(
